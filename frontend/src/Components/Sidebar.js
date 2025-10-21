@@ -1,15 +1,16 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom'; // import useLocation
+import { Link, useLocation } from 'react-router-dom';
 import './Sidebar.css';
-import { FaTachometerAlt, FaBook, FaChartLine, FaUsers } from 'react-icons/fa';
+import { FaTachometerAlt, FaBook, FaChartLine, FaUsers, FaPencilAlt } from 'react-icons/fa';
 
 function Sidebar({ role = 'student' }) {
-  const location = useLocation(); // call the hook here
+  const location = useLocation();
 
   const linksByRole = {
     student: [
       { name: 'Dashboard', icon: <FaTachometerAlt />, path: '/' },
       { name: 'My Lessons', icon: <FaBook />, path: '/my-lessons' },
+      { name: 'Practice', icon: <FaPencilAlt />, path: '/practice' },
       { name: 'Progress', icon: <FaChartLine />, path: '/progress' },
     ],
     teacher: [
