@@ -10,9 +10,10 @@ import Progress from './Pages/Student/Progress';
 import TeacherDashboard from './Pages/Teacher/TeacherDashboard';
 import Lessons from './Pages/Teacher/Lessons';
 import Students from './Pages/Teacher/Students';
+import Practice from './Pages/Student/Practice';
 
 function App() {
-  const role = 'teacher'; // switch between 'student' and 'teacher' to test
+  const role = 'student'; // switch between 'student' and 'teacher' to test
 
   return (
     <Router>
@@ -21,6 +22,7 @@ function App() {
           <>
             <Route path="/" element={<StudentDashboard role={role} />} />
             <Route path="/my-lessons" element={<MyLessons role={role} />} />
+            <Route path="/practice" element={<Practice role={role} />} />
             <Route path="/progress" element={<Progress role={role} />} />
           </>
         ) : (
