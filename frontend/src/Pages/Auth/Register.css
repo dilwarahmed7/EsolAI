@@ -1,0 +1,108 @@
+/* Full page container */
+.register-page {
+    width: 100vw;
+    height: 100vh;
+    background-color: #2563eb; /* blue background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+  }
+  
+  /* Flex container for form + placeholder */
+  .register-content {
+    display: flex;
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 900px;
+    width: 90%;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  }
+  
+  /* Card (form) */
+  .register-card {
+    flex: 1;
+    padding: 40px;
+    background-color: #ffffff;
+  }
+  
+  /* Title */
+  .register-title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .role-switch {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .role-switch label {
+    flex: 1;
+    padding: 10px;
+    border-radius: 9999px;
+    text-align: center;
+    background-color: #f3f4f6;
+    margin: 0 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+  }
+  
+  /* Highlight the selected role */
+  .role-switch label.active {
+    background-color: #4f46e5; /* primary blue */
+    color: white;
+  }
+  
+  /* Hide the actual radio buttons */
+  .role-switch input[type="radio"] {
+    display: none;
+  }
+  
+  /* Form */
+  .register-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .register-form input {
+    margin-bottom: 15px;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  
+  .register-btn {
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: #2563eb;
+    color: white;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .register-btn:hover {
+    background-color: #1e40af;
+  }
+  
+  .register-footer {
+    margin-top: 15px;
+    text-align: center;
+  }
+  
+  /* Placeholder on the right */
+  .register-placeholder {
+    flex: 1;
+    background-color: #f3f4f6;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
