@@ -89,9 +89,9 @@ namespace backend.Controllers
 
         private string GenerateJwtToken(User user)
         {
-            var jwtKey = _config["Jwt:Key"];
-            if (string.IsNullOrEmpty(jwtKey))
-                throw new Exception("JWT Key is missing in configuration");
+            var jwtKey = _config["JWT_KEY"] ?? _config["Jwt:Key"];
+            if (string.IsNullOrWhiteSpace(jwtKey))
+                throw new Exception("JWT_KEY / Jwt:Key is missing in configuration");
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -107,7 +107,7 @@ namespace backend.Controllers
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddDays(7),
+                expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: creds
             );
 

@@ -3,19 +3,44 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using backend.Data;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+builder.Configuration.AddEnvironmentVariables();
+
+var baseConn = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(baseConn))
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection is missing.");
+
+var dbPassword = builder.Configuration["DB_PASSWORD"];
+if (string.IsNullOrWhiteSpace(dbPassword))
+    throw new InvalidOperationException("DB_PASSWORD is not set.");
+
+var csb = new NpgsqlConnectionStringBuilder(baseConn)
+{
+    Password = dbPassword
+};
+var fullConnString = csb.ToString();
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+var jwtKey = builder.Configuration["JWT_KEY"];
+
+if (string.IsNullOrWhiteSpace(jwtIssuer))
+    throw new InvalidOperationException("Jwt:Issuer is not set.");
+if (string.IsNullOrWhiteSpace(jwtAudience))
+    throw new InvalidOperationException("Jwt:Audience is not set.");
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("JWT_KEY is not set.");
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add DbContext with PostgreSQL (Supabase)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(fullConnString));
 
-// JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -29,17 +54,14 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
 });
 
-// Authorization
 builder.Services.AddAuthorization();
 
-// CORS (allow your React frontend)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactDev", policy =>
@@ -52,23 +74,15 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Swagger in Development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Middleware
 app.UseHttpsRedirection();
-
-// **Important: CORS must come before Authentication**
 app.UseCors("AllowReactDev");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
-// Map Controllers
 app.MapControllers();
-
 app.Run();
