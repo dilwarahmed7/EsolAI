@@ -19,11 +19,14 @@ body {
   justify-content: space-between;
   padding: 20px;
   border-bottom: 1px solid #374151;
+  max-height: 40px;
 }
 
-.logo {
-  font-size: 1.5rem;
-  font-weight: bold;
+.sidebar .logo {
+  width: 170px;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .profile {

@@ -25,7 +25,7 @@ function Sidebar({ role = 'student' }) {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <div className="logo">EsolAI</div>
+        <img src="/images/EsolAI.png" alt="EsolAI Logo" className="logo" />
         <div className="profile">DA</div>
       </div>
 
