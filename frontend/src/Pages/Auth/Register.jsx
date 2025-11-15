@@ -131,9 +131,9 @@ const Register = () => {
         </div>
 
         <div className="register-placeholder">
+          <img src="/images/EsolAI.png" alt="EsolAI Logo" className="logo" />
           <h2>Welcome to EsolAI</h2>
           <p>Explore our platform and start your journey to mastering English.</p>
-          <p>Placeholder for images, illustrations, or graphics.</p>
         </div>
       </div>
     </div>
