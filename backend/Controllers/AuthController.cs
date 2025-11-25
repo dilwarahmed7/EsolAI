@@ -1,6 +1,7 @@
 using backend.Data;
 using backend.Models;
 using backend.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -45,14 +46,26 @@ namespace backend.Controllers
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
-            // Role-specific creation
             if (dto.Role == "Student")
             {
+                if (!dto.DateOfBirth.HasValue)
+                    return BadRequest("Date of birth is required for students.");
+
+                var today = DateTime.UtcNow.Date;
+                var dob = dto.DateOfBirth.Value.Date;
+                if (dob > today)
+                    return BadRequest("Date of birth cannot be in the future.");
+
+                var age = today.Year - dob.Year;
+                if (dob > today.AddYears(-age)) age--;
+                if (age <= 0 || age > 120)
+                    return BadRequest("Invalid age derived from date of birth.");
+
                 var student = new Student
                 {
                     UserId = user.Id,
                     FullName = dto.FullName,
-                    Age = dto.Age,
+                    Age = age,
                     FirstLanguage = dto.FirstLanguage,
                     Level = dto.Level
                 };
@@ -85,6 +98,124 @@ namespace backend.Controllers
 
             var token = GenerateJwtToken(user);
             return Ok(new { token, role = user.Role });
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("User ID missing in token.");
+
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized("Invalid user ID in token.");
+
+            var user = await _db.Users
+                .Include(u => u.StudentProfile)
+                .Include(u => u.TeacherProfile)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                return NotFound("User not found");
+
+            var fullName = user.Role == "Teacher"
+                ? user.TeacherProfile?.FullName
+                : user.StudentProfile?.FullName;
+
+            return Ok(new
+            {
+                fullName = fullName ?? string.Empty,
+                role = user.Role,
+                email = user.Email,
+                age = user.StudentProfile?.Age,
+                firstLanguage = user.StudentProfile?.FirstLanguage,
+                level = user.StudentProfile?.Level
+            });
+        }
+
+        [Authorize]
+        [HttpPut("change-password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (dto.NewPassword != dto.ConfirmPassword)
+                return BadRequest("New password and confirmation do not match.");
+            if (dto.NewPassword == dto.CurrentPassword)
+                return BadRequest("New password cannot be the same as the current password.");
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized("Invalid user ID in token.");
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return NotFound("User not found");
+
+            var currentValid = BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash);
+            if (!currentValid)
+                return BadRequest("Current password is incorrect.");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            await _db.SaveChangesAsync();
+
+            return Ok("Password updated successfully.");
+        }
+
+        [Authorize]
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateProfile(UpdateProfileDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized("Invalid user ID in token.");
+
+            var user = await _db.Users
+                .Include(u => u.StudentProfile)
+                .Include(u => u.TeacherProfile)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                return NotFound("User not found");
+
+            if (user.Role == "Teacher")
+            {
+                if (user.TeacherProfile == null)
+                    return BadRequest("Teacher profile not found.");
+
+                user.TeacherProfile.FullName = dto.FullName;
+            }
+            else if (user.Role == "Student")
+            {
+                if (user.StudentProfile == null)
+                    return BadRequest("Student profile not found.");
+
+                user.StudentProfile.FullName = dto.FullName;
+                if (dto.Age.HasValue)
+                    user.StudentProfile.Age = dto.Age.Value;
+                if (!string.IsNullOrWhiteSpace(dto.FirstLanguage))
+                    user.StudentProfile.FirstLanguage = dto.FirstLanguage;
+                if (!string.IsNullOrWhiteSpace(dto.Level))
+                    user.StudentProfile.Level = dto.Level;
+            }
+            else
+            {
+                return BadRequest("Unsupported role.");
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                fullName = dto.FullName,
+                role = user.Role,
+                email = user.Email
+            });
         }
 
         private string GenerateJwtToken(User user)

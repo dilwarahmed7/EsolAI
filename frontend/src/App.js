@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 
 import Register from './Pages/Auth/Register';
 import Login from './Pages/Auth/Login';
+import EditProfile from './Pages/Auth/EditProfile';
 
 import StudentDashboard from './Pages/Student/StudentDashboard';
 import MyLessons from './Pages/Student/MyLessons';
@@ -36,6 +37,7 @@ function App() {
             <Route path="/my-lessons" element={<MyLessons role={role} />} />
             <Route path="/practice" element={<Practice role={role} />} />
             <Route path="/progress" element={<Progress role={role} />} />
+            <Route path="/profile" element={<EditProfile role={role} />} />
           </>
         )}
 
@@ -45,6 +47,7 @@ function App() {
             <Route path="/" element={<TeacherDashboard role={role} />} />
             <Route path="/lessons" element={<Lessons role={role} />} />
             <Route path="/students" element={<Students role={role} />} />
+            <Route path="/profile" element={<EditProfile role={role} />} />
           </>
         )}
 

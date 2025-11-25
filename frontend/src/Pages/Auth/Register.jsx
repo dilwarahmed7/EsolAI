@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Register.css";
 
@@ -7,9 +7,49 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("Student");
-  const [age, setAge] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [firstLanguage, setFirstLanguage] = useState("");
   const [level, setLevel] = useState("");
+
+  const languageOptions = useMemo(() => {
+    try {
+      if (typeof Intl !== "undefined" && Intl.DisplayNames && Intl.supportedValuesOf) {
+        const codes = Intl.supportedValuesOf("language");
+        const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+        const seen = new Set();
+        const names = [];
+
+        codes.forEach((code) => {
+          const name = displayNames.of(code);
+          if (name && !seen.has(name)) {
+            seen.add(name);
+            names.push(name);
+          }
+        });
+
+        return names.sort((a, b) => a.localeCompare(b));
+      }
+    } catch (err) {
+      console.warn("Falling back to default language list", err);
+    }
+
+    return [
+      "English",
+      "Spanish",
+      "French",
+      "Chinese",
+      "Arabic",
+      "Hindi",
+      "Portuguese",
+      "Bengali",
+      "Russian",
+      "German",
+      "Japanese",
+      "Other",
+    ];
+  }, []);
+
+  const levelOptions = useMemo(() => ["A1", "A2", "B1", "B2", "C1", "C2"], []);
 
   const navigate = useNavigate();
 
@@ -18,7 +58,7 @@ const Register = () => {
 
     const payload = { email, password, fullName, role };
     if (role === "Student") {
-      payload.age = Number(age);
+      payload.dateOfBirth = dateOfBirth;
       payload.firstLanguage = firstLanguage;
       payload.level = level;
     }
@@ -98,28 +138,36 @@ const Register = () => {
             {role === "Student" && (
               <>
                 <input
-                  type="number"
-                  placeholder="Age"
-                  min="1"
-                  max="120"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
+                  type="date"
+                  placeholder="Date of Birth"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
                   required
                 />
                 <input
-                  type="text"
+                  list="language-options"
                   placeholder="First Language"
                   value={firstLanguage}
                   onChange={(e) => setFirstLanguage(e.target.value)}
                   required
                 />
-                <input
-                  type="text"
-                  placeholder="Level"
+                <datalist id="language-options">
+                  {languageOptions.map((lang) => (
+                    <option key={lang} value={lang} />
+                  ))}
+                </datalist>
+                <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value)}
                   required
-                />
+                >
+                  <option value="">Select Level</option>
+                  {levelOptions.map((lvl) => (
+                    <option key={lvl} value={lvl}>
+                      {lvl}
+                    </option>
+                  ))}
+                </select>
               </>
             )}
 
