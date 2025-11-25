@@ -1,10 +1,20 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
-import { FaTachometerAlt, FaBook, FaChartLine, FaUsers, FaPencilAlt } from 'react-icons/fa';
+import {
+  FaTachometerAlt,
+  FaBook,
+  FaChartLine,
+  FaUsers,
+  FaPencilAlt,
+} from 'react-icons/fa';
+import Profile from './Profile';
 
 function Sidebar({ role = 'student' }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [fullName, setFullName] = useState('');
+  const [error, setError] = useState('');
 
   const linksByRole = {
     student: [
@@ -21,12 +31,54 @@ function Sidebar({ role = 'student' }) {
   };
 
   const links = linksByRole[role] || [];
+  const initials = fullName ? fullName.trim().charAt(0).toUpperCase() : '?';
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('http://localhost:5144/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || 'Failed to load profile.');
+        }
+
+        const data = await res.json();
+        setFullName(data.fullName || data.FullName || '');
+      } catch (err) {
+        console.error(err);
+        setError('Profile unavailable');
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    navigate('/login');
+  };
+
+  const handleEditProfile = () => {
+    navigate('/profile');
+  };
 
   return (
     <div className="sidebar">
       <div className="sidebar-header">
         <img src="/images/EsolAI.png" alt="EsolAI Logo" className="logo" />
-        <div className="profile">DA</div>
+        <Profile
+          name={fullName || error || 'Unknown User'}
+          initials={initials}
+          onEditProfile={handleEditProfile}
+          onSignOut={handleSignOut}
+        />
       </div>
 
       <div className="nav-container">
