@@ -5,10 +5,13 @@ function Profile({
   name = '',
   initials = '?',
   onEditProfile,
-  onSettings,
   onSignOut,
 }) {
   const [open, setOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('theme') === 'dark';
+  });
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -22,11 +25,26 @@ function Profile({
     return () => document.removeEventListener('mousedown', handleClickAway);
   }, []);
 
+  useEffect(() => {
+    const root = document.body;
+    if (isDarkMode) {
+      root.classList.add('dark-mode');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      root.classList.remove('dark-mode');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
   const handleAction = (callback) => {
     if (callback) {
       callback();
     }
     setOpen(false);
+  };
+
+  const handleToggleTheme = () => {
+    setIsDarkMode((prev) => !prev);
   };
 
   return (
@@ -56,10 +74,14 @@ function Profile({
           </button>
           <button
             type="button"
-            className="menu-item"
-            onClick={() => handleAction(onSettings)}
+            className="menu-item theme-toggle"
+            onClick={handleToggleTheme}
+            aria-pressed={isDarkMode}
           >
-            Settings
+            <span className="toggle-text">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+            <span className={`toggle-switch ${isDarkMode ? 'on' : ''}`} aria-hidden="true">
+              <span className="toggle-thumb" />
+            </span>
           </button>
           <div className="divider" />
           <button

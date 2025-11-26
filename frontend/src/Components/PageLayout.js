@@ -3,7 +3,7 @@ import './PageLayout.css';
 
 function PageLayout({ title, role, children }) {
   return (
-    <div style={{ display: 'flex' }}>
+    <div className="page-layout">
       <Sidebar role={role} />
       <div className="main">
         <h1>{title}</h1>

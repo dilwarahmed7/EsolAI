@@ -1,10 +1,12 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  display: flex;
 }
 
 .sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
   width: 250px;
   height: 100vh;
   background-color: #1f2937;
@@ -78,10 +80,4 @@ body {
 
 .nav-link.active {
   background-color: #2563eb;
-}
-
-
-.main {
-  flex: 1;
-  padding: 20px;
 }
