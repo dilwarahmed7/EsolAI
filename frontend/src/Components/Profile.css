@@ -102,3 +102,45 @@
   background: rgba(248, 113, 113, 0.12);
   color: #fecdd3;
 }
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toggle-text {
+  font-weight: 600;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  border-radius: 13px;
+  background: #1f2937;
+  border: 1px solid #2f3b52;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.toggle-switch.on {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch.on .toggle-thumb {
+  transform: translateX(22px);
+}
