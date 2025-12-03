@@ -15,33 +15,42 @@ import Lessons from './Pages/Teacher/Lessons';
 import Students from './Pages/Teacher/Students';
 
 function App() {
-  const [role, setRole] = useState(null);
-  const [bootstrapped, setBootstrapped] = useState(false);
-
-  // Get role from localStorage and normalize to lowercase
-  useEffect(() => {
-    const userRole = localStorage.getItem("role"); // "Student" or "Teacher"
-    if (userRole) setRole(userRole.toLowerCase()); // store as "student" or "teacher"
-    setBootstrapped(true);
-  }, []);
-
-  if (!bootstrapped) {
-    // Avoid redirecting to /login while we restore the session from localStorage
+  const [role, setRole] = useState(() => {
+    const sessionRole = sessionStorage.getItem("role");
+    if (sessionRole) return sessionRole.toLowerCase();
     return null;
-  }
+  });
+
+  useEffect(() => {
+    const legacyRole = localStorage.getItem("role");
+    const legacyToken = localStorage.getItem("token");
+
+    if (!sessionStorage.getItem("role") && legacyRole) {
+      sessionStorage.setItem("role", legacyRole);
+      setRole(legacyRole.toLowerCase());
+      localStorage.removeItem("role");
+    }
+
+    if (!sessionStorage.getItem("token") && legacyToken) {
+      sessionStorage.setItem("token", legacyToken);
+      localStorage.removeItem("token");
+    }
+  }, []);
+  
+  useEffect(() => {
+    if (role) {
+      sessionStorage.setItem("role", role);
+    } else {
+      sessionStorage.removeItem("role");
+    }
+  }, [role]);
 
   return (
     <Router>
       <Routes>
         {/* Auth routes */}
-        <Route
-          path="/login"
-          element={role ? <Navigate to="/" replace /> : <Login setRole={setRole} />}
-        />
-        <Route
-          path="/register"
-          element={role ? <Navigate to="/" replace /> : <Register />}
-        />
+        <Route path="/login" element={<Login setRole={setRole} />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Protected routes for student */}
         {role === "student" && (

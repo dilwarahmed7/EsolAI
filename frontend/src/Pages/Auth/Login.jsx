@@ -53,8 +53,8 @@ const Login = ({ setRole }) => {
   
       const data = await res.json();
   
-      localStorage.setItem("role", data.role);
-      localStorage.setItem("token", data.token);
+      sessionStorage.setItem("role", data.role.toLowerCase());
+      sessionStorage.setItem("token", data.token);
   
       if (setRole) setRole(data.role.toLowerCase());
   

@@ -34,7 +34,7 @@ function Sidebar({ role = 'student' }) {
   const initials = fullName ? fullName.trim().charAt(0).toUpperCase() : '?';
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) return;
 
     const fetchProfile = async () => {
@@ -60,8 +60,8 @@ function Sidebar({ role = 'student' }) {
   }, []);
 
   const handleSignOut = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
     navigate('/login');
   };
 
