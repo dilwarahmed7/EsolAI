@@ -18,7 +18,7 @@ function EditProfile({ role }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
       setStatus({ type: 'error', message: 'No token found. Please log in again.' });
       return;
@@ -60,7 +60,7 @@ function EditProfile({ role }) {
     e.preventDefault();
     setStatus({ type: '', message: '' });
 
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
       setStatus({ type: 'error', message: 'No token found. Please log in again.' });
       return;
