@@ -16,19 +16,32 @@ import Students from './Pages/Teacher/Students';
 
 function App() {
   const [role, setRole] = useState(null);
+  const [bootstrapped, setBootstrapped] = useState(false);
 
   // Get role from localStorage and normalize to lowercase
   useEffect(() => {
     const userRole = localStorage.getItem("role"); // "Student" or "Teacher"
     if (userRole) setRole(userRole.toLowerCase()); // store as "student" or "teacher"
+    setBootstrapped(true);
   }, []);
+
+  if (!bootstrapped) {
+    // Avoid redirecting to /login while we restore the session from localStorage
+    return null;
+  }
 
   return (
     <Router>
       <Routes>
         {/* Auth routes */}
-        <Route path="/login" element={<Login setRole={setRole} />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/login"
+          element={role ? <Navigate to="/" replace /> : <Login setRole={setRole} />}
+        />
+        <Route
+          path="/register"
+          element={role ? <Navigate to="/" replace /> : <Register />}
+        />
 
         {/* Protected routes for student */}
         {role === "student" && (
