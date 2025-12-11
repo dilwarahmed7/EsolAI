@@ -92,12 +92,30 @@ namespace backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await _db.Users
+                .Include(u => u.StudentProfile)
+                .Include(u => u.TeacherProfile)
+                .FirstOrDefaultAsync(u => u.Email == dto.Email);
+
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return Unauthorized("Invalid credentials");
 
             var token = GenerateJwtToken(user);
-            return Ok(new { token, role = user.Role });
+
+            var profile = new
+            {
+                fullName = user.StudentProfile?.FullName ?? user.TeacherProfile?.FullName,
+                firstLanguage = user.StudentProfile?.FirstLanguage,
+                age = user.StudentProfile?.Age,
+                level = user.StudentProfile?.Level
+            };
+
+            return Ok(new
+            {
+                token,
+                role = user.Role,
+                profile
+            });
         }
 
         [Authorize]

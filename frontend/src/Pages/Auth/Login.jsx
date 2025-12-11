@@ -14,50 +14,51 @@ const Login = ({ setRole }) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-  
+
     const payload = { email, password };
-  
+
     try {
       const res = await fetch("http://localhost:5144/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-  
+
       if (!res.ok) {
-        let errorText = "";
-        try {
-          errorText = await res.text();
-        } catch {
-          errorText = "";
-        }
-  
+        const errorText = await res.text().catch(() => "");
         let message = "Something went wrong. Please try again.";
-  
+
         if (res.status === 401) {
-          if (errorText.toLowerCase().includes("invalid credentials")) {
-            message = "Invalid email or password.";
-          } else {
-            message = errorText || "Invalid email or password.";
-          }
+          message = errorText.toLowerCase().includes("invalid credentials")
+            ? "Invalid email or password."
+            : errorText || "Invalid email or password.";
         } else if (res.status === 400) {
           message = errorText || "Bad request. Please check your input.";
         } else if (res.status >= 500) {
           message = "Server error. Please try again later.";
         }
-  
+
         setError(message);
         setLoading(false);
         return;
       }
-  
+
       const data = await res.json();
-  
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          token: data.token,
+          role: data.role.toLowerCase(),
+          profile: data.profile,
+        })
+      );
+
       sessionStorage.setItem("role", data.role.toLowerCase());
       sessionStorage.setItem("token", data.token);
-  
+
       if (setRole) setRole(data.role.toLowerCase());
-  
+
       setLoading(false);
       navigate("/");
     } catch (err) {
@@ -65,7 +66,7 @@ const Login = ({ setRole }) => {
       setError("Unable to connect to the server. Please try again later.");
       setLoading(false);
     }
-  };  
+  };
 
   return (
     <div className="register-page">
@@ -83,6 +84,7 @@ const Login = ({ setRole }) => {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+
             <input
               type="password"
               placeholder="Password"
@@ -91,11 +93,7 @@ const Login = ({ setRole }) => {
               required
             />
 
-            <button
-              type="submit"
-              className="register-btn"
-              disabled={loading}
-            >
+            <button type="submit" className="register-btn" disabled={loading}>
               {loading ? "Logging in..." : "Log In"}
             </button>
 
@@ -108,7 +106,10 @@ const Login = ({ setRole }) => {
         <div className="register-placeholder">
           <img src="/images/EsolAI.png" alt="EsolAI Logo" className="logo" />
           <h2>Welcome Back!</h2>
-          <p>Enter your credentials and continue your journey to mastering English.</p>
+          <p>
+            Enter your credentials and continue your journey to mastering
+            English.
+          </p>
         </div>
       </div>
     </div>
