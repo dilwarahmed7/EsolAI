@@ -4,6 +4,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using backend.Data;
 using Npgsql;
+using backend.Services;
+using backend.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +39,9 @@ if (string.IsNullOrWhiteSpace(jwtKey))
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IQuestionGeneratorService, QuestionGeneratorService>();
+builder.Services.AddScoped<IGeminiClient, GeminiClient>();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(fullConnString));
