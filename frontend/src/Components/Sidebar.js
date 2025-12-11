@@ -72,7 +72,9 @@ function Sidebar({ role = 'student' }) {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <img src="/images/EsolAI.png" alt="EsolAI Logo" className="logo" />
+        <Link to="/" className="logo-link">
+          <img src="/images/EsolAI.png" alt="EsolAI Logo" className="logo" />
+        </Link>
         <Profile
           name={fullName || error || 'Unknown User'}
           initials={initials}

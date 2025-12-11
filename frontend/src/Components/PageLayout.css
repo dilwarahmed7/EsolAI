@@ -12,8 +12,8 @@
   align-items: stretch;
   gap: 24px;
   padding: 32px;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--bg-body);
+  color: var(--text-primary);
 }
 
 .main > h1 {
@@ -21,6 +21,6 @@
 }
 
 .dark-mode .main {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--bg-body);
+  color: var(--text-primary);
 }
