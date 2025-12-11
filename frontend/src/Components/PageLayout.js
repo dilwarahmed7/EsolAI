@@ -6,7 +6,7 @@ function PageLayout({ title, role, children }) {
     <div className="page-layout">
       <Sidebar role={role} />
       <div className="main">
-        <h1>{title}</h1>
+        {title ? <h1>{title}</h1> : null}
         {children}
       </div>
     </div>

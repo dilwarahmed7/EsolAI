@@ -1,27 +1,27 @@
 .register-page {
     width: 100vw;
     height: 100vh;
-    background-color: #ffffff;
+    background-color: var(--bg-body);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: Arial, sans-serif;
+    font-family: var(--font-body);
   }
   
   .register-content {
     display: flex;
-    background-color: white;
+    background-color: var(--bg-surface);
     border-radius: 12px;
     overflow: hidden;
     max-width: 900px;
     width: 90%;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-soft);
   }
 
    .register-card {
     flex: 1;
     padding: 40px;
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -70,7 +70,9 @@
     padding: 12px;
     font-size: 16px;
     border-radius: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-body);
+    color: var(--text-primary);
   }
   
   .register-btn {
@@ -78,14 +80,15 @@
     font-size: 16px;
     border: none;
     border-radius: 8px;
-    background-color: #2563eb;
-    color: white;
+    background-color: var(--primary);
+    color: var(--primary-contrast);
     cursor: pointer;
     margin-top: 10px;
+    box-shadow: var(--shadow-soft);
   }
   
   .register-btn:hover {
-    background-color: #1e40af;
+    background-color: var(--primary-strong);
   }
   
   .register-footer {
@@ -95,7 +98,7 @@
   
   .register-placeholder {
     flex: 1;
-    background-color: #f3f4f6;
+    background-color: var(--bg-muted);
     padding: 40px;
     display: flex;
     flex-direction: column;
@@ -111,9 +114,9 @@
   }
   
   .error-message {
-    background-color: #fee2e2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
+    background-color: rgba(248, 113, 113, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(248, 113, 113, 0.2);
     padding: 10px 12px;
     border-radius: 6px;
     margin-bottom: 15px;
@@ -124,4 +127,19 @@
     opacity: 0.7;
     cursor: not-allowed;
   }
+
+.dark-mode .register-content,
+.dark-mode .register-card {
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-strong);
+}
+
+.dark-mode .register-form input {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+}
+
+.dark-mode .register-placeholder {
+    background-color: var(--bg-muted);
+}
   

@@ -1,18 +1,14 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-}
-
 .sidebar {
   position: sticky;
   top: 0;
   align-self: flex-start;
   width: 250px;
   height: 100vh;
-  background-color: #1f2937;
-  color: white;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
+  border-right: 1px solid var(--border-soft);
 }
 
 .sidebar-header {
@@ -20,7 +16,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 20px;
-  border-bottom: 1px solid #374151;
+  border-bottom: 1px solid var(--border-soft);
   max-height: 40px;
 }
 
@@ -31,10 +27,14 @@ body {
   display: block;
 }
 
+.logo-link {
+  display: inline-flex;
+}
+
 .profile {
   width: 40px;
   height: 40px;
-  background-color: #4b5563;
+  background-color: var(--primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -59,14 +59,44 @@ body {
   display: flex;
   align-items: center;
   text-decoration: none;
-  color: white;
+  color: var(--text-primary);
   padding: 10px;
   border-radius: 5px;
-  transition: background-color 0.2s;
+  position: relative;
+  overflow: hidden;
+  transform: translateX(0);
+  transition:
+    background-color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-strong) 100%);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.25s ease;
 }
 
 .nav-link:hover {
-  background-color: #374151;
+  background-color: var(--bg-muted);
+  transform: translateX(6px);
+  box-shadow: var(--shadow-soft);
+}
+
+.nav-link:hover::before {
+  transform: scaleY(1);
+}
+
+.nav-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .nav-link .icon {
@@ -79,5 +109,11 @@ body {
 }
 
 .nav-link.active {
-  background-color: #2563eb;
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+  box-shadow: var(--shadow-soft);
+}
+
+.nav-link.active::before {
+  transform: scaleY(1);
 }

@@ -1,27 +1,27 @@
 .register-page {
     width: 100vw;
     height: 100vh;
-    background-color: #ffffff;
+    background-color: var(--bg-body);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: Arial, sans-serif;
+    font-family: var(--font-body);
   }
   
   .register-content {
     display: flex;
-    background-color: white;
+    background-color: var(--bg-surface);
     border-radius: 12px;
     overflow: hidden;
     max-width: 900px;
     width: 90%;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-soft);
   }
 
    .register-card {
     flex: 1;
     padding: 40px;
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
   }
   
   .register-title {
@@ -40,7 +40,7 @@
     padding: 10px;
     border-radius: 9999px;
     text-align: center;
-    background-color: #f3f4f6;
+    background-color: var(--bg-muted);
     margin: 0 5px;
     cursor: pointer;
     font-weight: 500;
@@ -48,8 +48,8 @@
   }
   
   .role-switch label.active {
-    background-color: #4f46e5;
-    color: white;
+    background-color: var(--primary);
+    color: var(--primary-contrast);
   }
   
   .role-switch input[type="radio"] {
@@ -67,17 +67,18 @@
     padding: 12px;
     font-size: 16px;
     border-radius: 8px;
-    border: 1px solid #ccc;
-    background-color: #f8fafc;
+    border: 1px solid var(--border-soft);
+    background-color: var(--bg-body);
+    color: var(--text-primary);
 }
 
 .register-form select {
     appearance: none;
     -moz-appearance: none;
     -webkit-appearance: none;
-    background-image: linear-gradient(45deg, transparent 50%, #4f46e5 50%),
-                      linear-gradient(135deg, #4f46e5 50%, transparent 50%),
-                      linear-gradient(to right, #d1d5db, #d1d5db);
+    background-image: linear-gradient(45deg, transparent 50%, #1d4ed8 50%),
+                      linear-gradient(135deg, #1d4ed8 50%, transparent 50%),
+                      linear-gradient(to right, var(--border-soft), var(--border-soft));
     background-position: calc(100% - 20px) calc(1.1em), calc(100% - 15px) calc(1.1em), calc(100% - 2.5em) 0.5em;
     background-size: 5px 5px, 5px 5px, 1px 1.5em;
     background-repeat: no-repeat;
@@ -89,14 +90,15 @@
     font-size: 16px;
     border: none;
     border-radius: 8px;
-    background-color: #2563eb;
-    color: white;
+    background-color: var(--primary);
+    color: var(--primary-contrast);
     cursor: pointer;
     margin-top: 10px;
+    box-shadow: var(--shadow-soft);
   }
   
   .register-btn:hover {
-    background-color: #1e40af;
+    background-color: var(--primary-strong);
   }
   
   .register-footer {
@@ -106,7 +108,7 @@
   
   .register-placeholder {
     flex: 1;
-    background-color: #f3f4f6;
+    background-color: var(--bg-muted);
     padding: 40px;
     display: flex;
     flex-direction: column;
@@ -120,4 +122,20 @@
     height: auto;
     margin-bottom: 0.1rem;
   }
+
+.dark-mode .register-content,
+.dark-mode .register-card {
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-strong);
+}
+
+.dark-mode .register-form input,
+.dark-mode .register-form select {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+}
+
+.dark-mode .register-placeholder {
+    background-color: var(--bg-muted);
+}
   
