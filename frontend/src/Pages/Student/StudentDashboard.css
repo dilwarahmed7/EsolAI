@@ -183,6 +183,12 @@
   gap: 10px;
 }
 
+.practice-copy {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 .practice-btn {
   border: 1px solid transparent;
   border-radius: 10px;

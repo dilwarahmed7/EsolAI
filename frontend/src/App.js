@@ -9,6 +9,7 @@ import StudentDashboard from './Pages/Student/StudentDashboard';
 import MyLessons from './Pages/Student/MyLessons';
 import Progress from './Pages/Student/Progress';
 import Practice from './Pages/Student/Practice';
+import PracticeCommonErrors from './Pages/Student/PracticeCommonErrors';
 
 import TeacherDashboard from './Pages/Teacher/TeacherDashboard';
 import Lessons from './Pages/Teacher/Lessons';
@@ -58,6 +59,7 @@ function App() {
             <Route path="/" element={<StudentDashboard role={role} />} />
             <Route path="/my-lessons" element={<MyLessons role={role} />} />
             <Route path="/practice" element={<Practice role={role} />} />
+            <Route path="/practice/common-errors" element={<PracticeCommonErrors role={role} />} />
             <Route path="/progress" element={<Progress role={role} />} />
             <Route path="/profile" element={<EditProfile role={role} />} />
           </>

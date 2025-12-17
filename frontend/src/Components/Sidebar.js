@@ -33,6 +33,9 @@ function Sidebar({ role = 'student' }) {
   const links = linksByRole[role] || [];
   const initials = fullName ? fullName.trim().charAt(0).toUpperCase() : '?';
 
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
+
   useEffect(() => {
     const token = sessionStorage.getItem('token');
     if (!token) return;
@@ -89,7 +92,7 @@ function Sidebar({ role = 'student' }) {
             <Link
               to={link.path}
               key={idx}
-              className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}
+              className={`nav-link ${isActive(link.path) ? 'active' : ''}`}
             >
               <span className="icon">{link.icon}</span>
               <span className="link-text">{link.name}</span>

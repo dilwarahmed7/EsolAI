@@ -125,8 +125,10 @@ function StudentDashboard({ role }) {
             onClick={() => navigate('/practice')}
           >
             <div className="practice-actions">
-              <div className="practice-btn primary">Practice common errors</div>
-              <div className="practice-btn ghost">Practice personalised errors</div>
+              <p className="practice-copy">
+                Jump into the practice workspace to work on your common and personalised errors.
+              </p>
+              <div className="practice-btn primary">Open practice workspace</div>
             </div>
           </QuickCard>
 

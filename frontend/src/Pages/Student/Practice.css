@@ -1,0 +1,178 @@
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.practice-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.practice-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.practice-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: var(--shadow-soft);
+}
+
+.practice-section.muted {
+  background: var(--bg-muted);
+  border-style: dashed;
+}
+
+.section-header {
+  margin: 0 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.practice-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.practice-card.skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--bg-muted), #f7f9ff, var(--bg-muted));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+.skeleton-line.button {
+  width: 40%;
+  height: 34px;
+  margin-top: 8px;
+}
+
+.card-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.card-actions {
+  margin-top: auto;
+}
+
+.card-button {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.card-button:hover {
+  transform: translateY(-1px);
+  background: var(--primary-strong);
+  box-shadow: var(--shadow-strong);
+}
+
+.card-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+  box-shadow: none;
+}
+
+.practice-error {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #7f1d1d;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pill.muted {
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+.empty-state {
+  padding: 18px;
+  border: 1px dashed var(--border-soft);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+}
+
+.practice-section .card-grid.disabled .practice-card {
+  opacity: 0.75;
+}
+
+.disabled-card {
+  border-style: dashed;
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .practice-section {
+    padding: 14px;
+  }
+}
