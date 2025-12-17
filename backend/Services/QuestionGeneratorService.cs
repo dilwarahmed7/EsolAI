@@ -43,37 +43,36 @@ namespace backend.Services
         private string BuildPrompt(QuestionGenerationRequest request)
         {
             return $@"
-You are generating 3 English grammar practice questions for ESOL learners.
+You are an English teacher creating grammar practice questions for ESOL learners.
 
-ERROR TYPE:
-- {request.ErrorType}
+GOAL:
+Create EXACTLY 3 fill-in-the-blank questions that practice this error type:
+{request.ErrorType}
 
-USER PROFILE:
-- First Language: {request.FirstLanguage}
+LEARNER PROFILE:
+- First language: {request.FirstLanguage}
 - Age: {request.Age}
-- CEFR Level: {request.Level}
+- English level (CEFR): {request.Level}
 
-CEFR DIFFICULTY RULES (IMPORTANT):
-- A1: Use very simple vocabulary, everyday topics, and short present-tense sentences.
-- A2: Use simple past/present, basic connectors, familiar topics, and short clear structures.
-- B1: Use moderately complex sentences, everyday + practical topics, and some detail.
-- B2: Use more complex grammar, abstract or academic-leaning topics, and multi-clause sentences.
-- C1: Use advanced structures, nuance, less common vocabulary, and concise but sophisticated phrasing.
-- C2: Use near-native complexity, highly varied vocabulary, implied meaning, and flexible grammar use.
+DIFFICULTY:
+Adjust vocabulary, sentence length, and grammar complexity to match the CEFR level.
+Use age-appropriate and culturally neutral topics.
 
-TASK:
-Generate EXACTLY THREE fill-in-the-blank questions.
+QUESTION RULES:
+- Write exactly 3 questions
+- Each question is 1–2 sentences
+- Each question contains 1–3 blanks written as ___
+- Each question must clearly test the error type
+- Each question must sound natural when completed
+- All questions must be different
 
-Each question:
-- 1–2 sentences
-- Contains 1–3 blanks written as ___
-- Targets: {request.ErrorType}
-- Uses a DIFFERENT topic for each question
-
-ANSWERS:
-- Answer array per question
-- EXACTLY one answer per blank
-- CHECK that the count matches before responding
+ANSWER RULES:
+- Provide ONLY the grammatically correct word(s)
+- Answers must be fully inflected (correct tense, number, and agreement)
+- Do NOT use base verb forms unless they are correct in context
+- One word per blank
+- No alternatives or explanations
+- Number of answers must exactly match number of blanks
 
 STRICT OUTPUT FORMAT (NO EXTRA TEXT):
 
@@ -81,7 +80,7 @@ Question 1:
 <question>
 
 Answer 1:
-[""answer1"", ""answer2""]
+[""answer"", ""answer""]
 
 Question 2:
 <question>
@@ -95,15 +94,18 @@ Question 3:
 Answer 3:
 [""answer""]
 
-You MUST NOT:
-- Add markdown
-- Add explanations
-- Use any other structure
+IMPORTANT GRAMMAR RULE:
+- Answers MUST be fully grammatically correct in the sentence
+- Do NOT use base verb forms unless the base form is correct in context
+- For past events, use past tense verbs
+- For third person singular, include correct verb endings
 
-Before responding:
-- Validate there are EXACTLY 3 questions with answers
-
-RANDOM_SEED: {Guid.NewGuid()}
+FINAL SELF-CHECK (MANDATORY):
+For each question:
+- Insert the answer into the blank
+- Read the full sentence
+- If the sentence is not fully grammatical, FIX the answer
+- Do NOT output base verb forms for past or third-person contexts
 ";
         }
 

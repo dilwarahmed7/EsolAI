@@ -20,7 +20,6 @@ namespace backend.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         public Student? StudentProfile { get; set; }
         public Teacher? TeacherProfile { get; set; }
     }
