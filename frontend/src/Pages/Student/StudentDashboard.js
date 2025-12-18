@@ -40,7 +40,7 @@ const QuickCard = ({ title, subtitle, children, onClick }) => (
 
 function StudentDashboard({ role }) {
   const navigate = useNavigate();
-  const { studentName, averageScore, proficiencyLevel, lessonsToComplete } = useMemo(() => {
+  const { studentName, averageScore, proficiencyLevel, lessonsToComplete, className } = useMemo(() => {
     const stored = localStorage.getItem('user');
     const parsed = stored ? JSON.parse(stored) : {};
     const profile = parsed.profile || {};
@@ -50,6 +50,7 @@ function StudentDashboard({ role }) {
       averageScore: profile.averageScore ?? profile.AverageScore ?? '--',
       proficiencyLevel: profile.level || profile.Level || 'N/A',
       lessonsToComplete: profile.lessonsToComplete ?? profile.LessonsToComplete ?? '--',
+      className: profile.className || profile.ClassName || '',
     };
   }, []);
 
@@ -81,6 +82,7 @@ function StudentDashboard({ role }) {
           <p className="eyebrow">Welcome back</p>
           <h1 className="page-title">Welcome back, {studentName}</h1>
         </div>
+        {className ? <div className="class-chip">{className}</div> : null}
       </div>
 
       <div className="section-header">

@@ -120,6 +120,65 @@
   color: var(--text-secondary);
 }
 
+.class-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.class-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-muted);
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.class-item:hover {
+  transform: translateY(-1px);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.class-skeleton {
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--bg-muted), #f7f9ff, var(--bg-muted));
+  background-size: 200% 100%;
+  animation: shimmer 1.3s ease infinite;
+}
+
+.empty-class {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--border-soft);
+  color: var(--text-secondary);
+}
+
+.class-link {
+  margin-top: auto;
+  display: inline-block;
+  color: var(--primary-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.class-link:hover {
+  text-decoration: underline;
+}
+
 .stat-card {
   display: flex;
   gap: 12px;
@@ -165,6 +224,12 @@
 
 .dashboard-placeholder {
   min-height: 200px;
+}
+
+.class-card .class-item,
+.class-card .empty-class,
+.class-card .class-skeleton {
+  min-height: auto;
 }
 
 .dark-mode .dash-button.ghost {

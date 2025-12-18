@@ -15,6 +15,7 @@ namespace backend.Data
         public DbSet<Teacher> Teachers => Set<Teacher>();
         public DbSet<L1ErrorType> L1ErrorTypes { get; set; }
         public DbSet<PracticeSession> PracticeSessions { get; set; }
+        public DbSet<Class> Classes { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

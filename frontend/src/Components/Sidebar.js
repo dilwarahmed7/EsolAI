@@ -7,6 +7,7 @@ import {
   FaChartLine,
   FaUsers,
   FaPencilAlt,
+  FaMarker,
 } from 'react-icons/fa';
 import Profile from './Profile';
 
@@ -27,6 +28,7 @@ function Sidebar({ role = 'student' }) {
       { name: 'Dashboard', icon: <FaTachometerAlt />, path: '/' },
       { name: 'Lessons', icon: <FaBook />, path: '/lessons' },
       { name: 'Students', icon: <FaUsers />, path: '/students' },
+      { name: 'Review', icon: <FaMarker />, path: '/review' },
     ],
   };
 
