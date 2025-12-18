@@ -7,7 +7,7 @@
 }
 
 .dashboard-header.student {
-  justify-content: flex-start;
+  justify-content: space-between;
 }
 
 .page-title {
@@ -258,6 +258,19 @@
 
 .dashboard-placeholder {
   min-height: 200px;
+}
+
+.class-chip {
+  margin-left: auto;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+  font-weight: 800;
+  color: var(--text-primary);
+  min-width: 120px;
+  text-align: center;
 }
 
 .dark-mode .stat-card {

@@ -14,6 +14,7 @@ import PracticeCommonErrors from './Pages/Student/PracticeCommonErrors';
 import TeacherDashboard from './Pages/Teacher/TeacherDashboard';
 import Lessons from './Pages/Teacher/Lessons';
 import Students from './Pages/Teacher/Students';
+import Review from "./Pages/Teacher/Review";
 
 function App() {
   const [role, setRole] = useState(() => {
@@ -71,6 +72,7 @@ function App() {
             <Route path="/" element={<TeacherDashboard role={role} />} />
             <Route path="/lessons" element={<Lessons role={role} />} />
             <Route path="/students" element={<Students role={role} />} />
+            <Route path="/review" element={<Review role={role} />} />
             <Route path="/profile" element={<EditProfile role={role} />} />
           </>
         )}

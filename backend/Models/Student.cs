@@ -8,21 +8,24 @@ namespace backend.Models
         [Key]
         public int Id { get; set; }
 
-        [ForeignKey("User")]
+        [ForeignKey(nameof(User))]
         public int UserId { get; set; }
+
+        public User User { get; set; } = null!;
 
         [Required]
         public string FullName { get; set; } = string.Empty;
 
+        public int Age { get; set; }
+
         [Required]
         public string FirstLanguage { get; set; } = string.Empty;
 
-        [Range(1, 120)]
-        public int Age { get; set; }
-
         public string Level { get; set; } = string.Empty;
 
-        // Navigation property
-        public User User { get; set; } = null!;
+        [ForeignKey(nameof(Class))]
+        public int? ClassId { get; set; }
+
+        public Class? Class { get; set; }
     }
 }

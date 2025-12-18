@@ -94,6 +94,7 @@ namespace backend.Controllers
         {
             var user = await _db.Users
                 .Include(u => u.StudentProfile)
+                .ThenInclude(s => s.Class)
                 .Include(u => u.TeacherProfile)
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -107,7 +108,9 @@ namespace backend.Controllers
                 fullName = user.StudentProfile?.FullName ?? user.TeacherProfile?.FullName,
                 firstLanguage = user.StudentProfile?.FirstLanguage,
                 age = user.StudentProfile?.Age,
-                level = user.StudentProfile?.Level
+                level = user.StudentProfile?.Level,
+                classId = user.StudentProfile?.ClassId,
+                className = user.StudentProfile?.Class?.Name
             };
 
             return Ok(new
@@ -131,6 +134,7 @@ namespace backend.Controllers
 
             var user = await _db.Users
                 .Include(u => u.StudentProfile)
+                .ThenInclude(s => s.Class)
                 .Include(u => u.TeacherProfile)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -148,7 +152,9 @@ namespace backend.Controllers
                 email = user.Email,
                 age = user.StudentProfile?.Age,
                 firstLanguage = user.StudentProfile?.FirstLanguage,
-                level = user.StudentProfile?.Level
+                level = user.StudentProfile?.Level,
+                classId = user.StudentProfile?.ClassId,
+                className = user.StudentProfile?.Class?.Name
             });
         }
 

@@ -1,0 +1,364 @@
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.teacher-students {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.notice {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+.notice.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #7f1d1d;
+}
+
+.empty-card,
+.data-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: var(--shadow-soft);
+}
+
+.empty-card p {
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-group label {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.teacher-students select,
+.teacher-students input[type='text'],
+.teacher-students input[type='email'],
+.teacher-students input[type='number'] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-muted);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.primary-btn,
+.ghost-btn,
+.danger-btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.primary-btn {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  border-color: var(--primary);
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  background: var(--primary-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.ghost-btn {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-soft);
+}
+
+.ghost-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
+
+.ghost-btn.wide,
+.primary-btn.wide {
+  min-width: 180px;
+}
+
+.ghost-btn.small,
+.danger-btn.small {
+  padding: 8px 10px;
+  font-size: 0.95rem;
+}
+
+.danger-btn {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecdd3;
+}
+
+.danger-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
+
+.dark-mode .danger-btn {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fecdd3;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.dark-mode .danger-btn:hover {
+  box-shadow: var(--shadow-strong);
+}
+
+.data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sort-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sort-buttons .ghost-btn.active {
+  border-color: var(--primary);
+  color: var(--primary-strong);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.table {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  overflow: visible;
+  margin-top: 6px;
+}
+
+.table-head,
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 12px;
+}
+
+.table-head {
+  background: var(--bg-muted);
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.table-row:nth-child(even) {
+  background: rgba(59, 130, 246, 0.03);
+}
+
+.table-row.muted {
+  color: var(--text-secondary);
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  }
+
+.cell-strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.add-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 260px;
+  width: max(260px, 100%);
+  max-width: min(360px, 90vw);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: var(--shadow-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.dropdown-panel input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.menu-wrapper {
+  position: relative;
+}
+
+.menu-panel {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  box-shadow: var(--shadow-strong);
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  z-index: 20;
+}
+
+.menu-panel button {
+  padding: 10px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-panel button:hover {
+  background: var(--bg-muted);
+}
+
+.menu-panel button.danger {
+  color: #b91c1c;
+}
+
+.dark-mode .menu-panel {
+  background: var(--bg-surface);
+}
+
+.dark-mode .menu-panel button {
+  color: var(--text-primary);
+}
+
+.dark-mode .menu-panel button:hover {
+  background: var(--bg-muted);
+}
+
+.dark-mode .menu-panel button.danger {
+  color: #fca5a5;
+}
+
+@media (max-width: 900px) {
+  .table-head,
+  .table-row {
+    grid-template-columns: 1.6fr 1fr 1fr;
+    grid-template-areas:
+      "name name actions"
+      "score level actions";
+  }
+
+  .table-head div:nth-child(1),
+  .table-row div:nth-child(1) {
+    grid-area: name;
+  }
+
+  .table-head div:nth-child(2),
+  .table-row div:nth-child(2) {
+    grid-area: score;
+  }
+
+  .table-head div:nth-child(3),
+  .table-row div:nth-child(3) {
+    grid-area: level;
+  }
+
+  .table-head div:nth-child(4),
+  .table-row div:nth-child(4) {
+    grid-area: actions;
+    justify-self: flex-end;
+  }
+}
+
+@media (max-width: 640px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .add-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .dropdown-panel {
+    position: relative;
+    right: auto;
+  }
+
+  .menu-panel {
+    right: auto;
+  }
+
+  .table-head,
+  .table-row {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+  }
+
+  .table-actions {
+    justify-content: flex-start;
+  }
+}
