@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
+import DataGrid from '../../Components/DataGrid';
 import './Students.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher/classes';
@@ -10,6 +11,7 @@ function Students({ role }) {
   const addClassRef = useRef(null);
   const addStudentRef = useRef(null);
   const menuRefs = useRef({});
+  const allowedLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [students, setStudents] = useState([]);
@@ -202,9 +204,10 @@ function Students({ role }) {
     }
   };
 
-  const handleUpdateLevel = async (studentId, currentLevel) => {
-    const nextLevel = window.prompt('Update level', currentLevel || '');
-    if (!nextLevel || nextLevel === currentLevel) return;
+  const handleUpdateLevel = async (studentId, nextLevel, currentLevel) => {
+    const trimmed = (nextLevel || '').trim().toUpperCase();
+    if (!trimmed || trimmed === currentLevel) return;
+    if (!allowedLevels.includes(trimmed)) return;
 
     setError('');
     try {
@@ -214,13 +217,13 @@ function Students({ role }) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ level: nextLevel }),
+        body: JSON.stringify({ level: trimmed }),
       });
 
       if (!res.ok) throw new Error((await res.text()) || 'Could not update level.');
 
       setStudents((prev) =>
-        prev.map((s) => (s.id === studentId ? { ...s, level: nextLevel } : s)),
+        prev.map((s) => (s.id === studentId ? { ...s, level: trimmed } : s)),
       );
     } catch (err) {
       console.error(err);
@@ -444,88 +447,78 @@ function Students({ role }) {
                 </div>
               </div>
 
-              <div className="table">
-                <div className="table-head">
-                  <div>Name</div>
-                  <div>Average score</div>
-                  <div>Level</div>
-                  <div>Actions</div>
-                </div>
-                <div className="table-body">
-                  {loadingStudents ? (
-                    <div className="table-row muted">
-                      <div>Loading…</div>
-                      <div>--</div>
-                      <div>--</div>
-                      <div>--</div>
-                    </div>
-                  ) : sortedStudents.length === 0 ? (
-                    <div className="table-row muted">
-                      <div>No students found for this class.</div>
-                      <div>--</div>
-                      <div>--</div>
-                      <div>--</div>
-                    </div>
-                  ) : (
-                    sortedStudents.map((student) => (
-                      <div className="table-row" key={student.id}>
-                        <div className="cell-strong">{student.fullName}</div>
-                        <div>
-                          {typeof student.averageScore === 'number'
-                            ? `${student.averageScore}%`
-                            : 'Not set'}
-                        </div>
-                        <div>{student.level || 'N/A'}</div>
-                        <div className="table-actions">
-                          <div
-                            className="menu-wrapper"
-                            ref={(node) => {
-                              if (node) {
-                                menuRefs.current[student.id] = node;
-                              } else {
-                                delete menuRefs.current[student.id];
-                              }
-                            }}
-                          >
+              <DataGrid
+                loading={loadingStudents}
+                emptyMessage="No students found for this class."
+                columns={[
+                  { title: 'Name', width: '1.8fr' },
+                  { title: 'Average score', align: 'center', width: '1fr' },
+                  { title: 'Level', align: 'center', width: '1fr' },
+                  { title: 'Actions', align: 'right', width: '0.9fr' },
+                ]}
+                rows={sortedStudents.map((student) => ({
+                  key: student.id,
+                  cells: [
+                    <div className="cell-strong">{student.fullName}</div>,
+                    typeof student.averageScore === 'number' ? `${student.averageScore}%` : 'Not set',
+                    student.level || 'N/A',
+                    <div className="table-actions">
+                      <div
+                        className="menu-wrapper"
+                        ref={(node) => {
+                          if (node) {
+                            menuRefs.current[student.id] = node;
+                          } else {
+                            delete menuRefs.current[student.id];
+                          }
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="ghost-btn small"
+                          onClick={() =>
+                            setActiveMenu((prev) => (prev === student.id ? null : student.id))
+                          }
+                        >
+                          ⋯
+                        </button>
+                        {activeMenu === student.id ? (
+                          <div className="menu-panel">
+                            <div className="menu-section-title">Set level</div>
+                            <div className="menu-levels">
+                              {allowedLevels.map((lvl) => (
+                                <button
+                                  type="button"
+                                  key={lvl}
+                                  className={`level-chip ${
+                                    (student.level || '').toUpperCase() === lvl ? 'active' : ''
+                                  }`}
+                                  onClick={() => {
+                                    setActiveMenu(null);
+                                    handleUpdateLevel(student.id, lvl, student.level);
+                                  }}
+                                >
+                                  {lvl}
+                                </button>
+                              ))}
+                            </div>
                             <button
                               type="button"
-                              className="ghost-btn small"
-                              onClick={() =>
-                                setActiveMenu((prev) => (prev === student.id ? null : student.id))
-                              }
+                              className="danger"
+                              onClick={() => {
+                                setActiveMenu(null);
+                                handleRemoveStudent(student.id);
+                              }}
                             >
-                              ⋯
+                              Remove
                             </button>
-                            {activeMenu === student.id ? (
-                              <div className="menu-panel">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveMenu(null);
-                                    handleUpdateLevel(student.id, student.level);
-                                  }}
-                                >
-                                  Edit level
-                                </button>
-                                <button
-                                  type="button"
-                                  className="danger"
-                                  onClick={() => {
-                                    setActiveMenu(null);
-                                    handleRemoveStudent(student.id);
-                                  }}
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            ) : null}
                           </div>
-                        </div>
+                        ) : null}
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
+                    </div>,
+                  ],
+                }))}
+              />
             </div>
           </>
         )}

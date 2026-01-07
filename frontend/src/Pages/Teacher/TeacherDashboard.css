@@ -126,6 +126,53 @@
   gap: 10px;
 }
 
+.lesson-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.lesson-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-muted);
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.lesson-item:hover {
+  transform: translateY(-1px);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.lesson-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lesson-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
 .class-list {
   display: flex;
   flex-direction: column;
@@ -229,6 +276,12 @@
 .class-card .class-item,
 .class-card .empty-class,
 .class-card .class-skeleton {
+  min-height: auto;
+}
+
+.lesson-card .lesson-item,
+.lesson-card .empty-class,
+.lesson-card .class-skeleton {
   min-height: auto;
 }
 

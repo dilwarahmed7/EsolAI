@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using backend.Data;
+using backend.Models;
 using backend.Models.DTOs;
+using backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +15,12 @@ namespace backend.Controllers
     public class PracticeController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ICorrectionClient _correctionClient;
 
-        public PracticeController(AppDbContext context)
+        public PracticeController(AppDbContext context, ICorrectionClient correctionClient)
         {
             _context = context;
+            _correctionClient = correctionClient;
         }
 
         [HttpGet("l1-errors")]
@@ -73,6 +77,209 @@ namespace backend.Controllers
             return Ok(response);
         }
 
+        [HttpGet("personalized")]
+        public async Task<IActionResult> GetPersonalizedQueue()
+        {
+            var userId = GetUserIdFromJwt();
+            if (userId == null)
+                return Unauthorized();
+
+            var student = await _context.Students
+                .FirstOrDefaultAsync(s => s.UserId == userId.Value);
+
+            if (student == null)
+                return Unauthorized();
+
+            var unresolvedQuestionIds = await _context.StudentErrors
+                .Where(se =>
+                    se.StudentId == student.Id &&
+                    !se.Resolved &&
+                    (
+                        se.QuestionResponse.LessonQuestion.Type == QuestionType.Reading ||
+                        se.QuestionResponse.LessonAttempt.TeacherReviewCompleted ||
+                        !se.QuestionResponse.LessonAttempt.NeedsTeacherReview
+                    ))
+                .Select(se => se.QuestionResponse.LessonQuestionId)
+                .ToListAsync();
+
+            if (unresolvedQuestionIds.Count == 0)
+                return Ok(new List<PersonalizedErrorDto>());
+
+            var responses = await _context.QuestionResponses
+                .Include(r => r.LessonQuestion)
+                    .ThenInclude(q => q.AnswerOptions)
+                .Include(r => r.LessonAttempt)
+                    .ThenInclude(a => a.Lesson)
+                .Where(r =>
+                    r.LessonAttempt.StudentId == student.Id &&
+                    (
+                        r.LessonQuestion.Type == QuestionType.Reading ||
+                        r.LessonAttempt.TeacherReviewCompleted ||
+                        !r.LessonAttempt.NeedsTeacherReview
+                    ) &&
+                    unresolvedQuestionIds.Contains(r.LessonQuestionId))
+                .ToListAsync();
+
+            var grouped = responses
+                .GroupBy(r => r.LessonQuestionId)
+                .Select(g =>
+                {
+                    var question = g.First().LessonQuestion;
+                    var hasPerfect = question.Type == QuestionType.Reading
+                        ? g.Any(x => x.IsCorrect == true)
+                        : g.Any(x => (x.Score >= 10));
+
+                    if (hasPerfect)
+                        return null;
+
+                    var firstMiss = g
+                        .Where(x => question.Type == QuestionType.Reading
+                            ? x.IsCorrect == false
+                            : x.Score < 10)
+                        .OrderBy(x => x.LessonAttempt.SubmittedAt ?? x.LessonAttempt.StartedAt)
+                        .FirstOrDefault();
+
+                    if (firstMiss == null)
+                        return null;
+
+                    return new PersonalizedErrorDto
+                    {
+                        QuestionId = question.Id,
+                        LessonTitle = firstMiss.LessonAttempt.Lesson.Title,
+                        Type = question.Type.ToString(),
+                        Prompt = question.Prompt,
+                        ReadingSnippet = question.ReadingSnippet,
+                        AnswerOptions = question.Type == QuestionType.Reading
+                            ? question.AnswerOptions.Select(o => new BasicAnswerOptionDto
+                            {
+                                Id = o.Id,
+                                Text = o.Text
+                            }).ToList()
+                            : new List<BasicAnswerOptionDto>(),
+                        CreatedAt = firstMiss.LessonAttempt.SubmittedAt ?? firstMiss.LessonAttempt.StartedAt
+                    };
+                })
+                .Where(x => x != null)
+                .OrderBy(x => x!.CreatedAt)
+                .ToList();
+
+            return Ok(grouped);
+        }
+
+        [HttpPost("personalized/answer")]
+        public async Task<IActionResult> SubmitPersonalizedAnswer([FromBody] PersonalizedAnswerRequest request)
+        {
+            if (request == null || request.QuestionId <= 0)
+                return BadRequest("QuestionId is required.");
+
+            var userId = GetUserIdFromJwt();
+            if (userId == null)
+                return Unauthorized();
+
+            var student = await _context.Students
+                .FirstOrDefaultAsync(s => s.UserId == userId.Value);
+
+            if (student == null)
+                return Unauthorized();
+
+            var question = await _context.LessonQuestions
+                .Include(q => q.AnswerOptions)
+                .FirstOrDefaultAsync(q => q.Id == request.QuestionId);
+
+            if (question == null)
+                return NotFound("Question not found.");
+
+            // Validate the student has this question in a reviewed attempt and not yet perfected
+            var relevantResponses = await _context.QuestionResponses
+                .Include(r => r.LessonAttempt)
+                .Where(r =>
+                    r.LessonQuestionId == question.Id &&
+                    r.LessonAttempt.StudentId == student.Id &&
+                    (
+                        r.LessonQuestion.Type == QuestionType.Reading ||
+                        r.LessonAttempt.TeacherReviewCompleted ||
+                        !r.LessonAttempt.NeedsTeacherReview
+                    ))
+                .ToListAsync();
+
+            if (relevantResponses.Count == 0)
+                return Forbid("This question is not available for personalized practice.");
+
+            var hasPerfect = question.Type == QuestionType.Reading
+                ? relevantResponses.Any(r => r.IsCorrect == true)
+                : relevantResponses.Any(r => r.Score >= 10);
+
+            if (hasPerfect)
+                return BadRequest("This question has already been mastered.");
+
+            bool correct = false;
+            int score = 0;
+            string feedback = string.Empty;
+            string correctedText = string.Empty;
+
+            List<CorrectionChange> changes = new();
+
+            if (question.Type == QuestionType.Reading)
+            {
+                var correctOptionId = question.AnswerOptions.FirstOrDefault(o => o.IsCorrect)?.Id;
+                correct = request.SelectedOptionId != null && request.SelectedOptionId == correctOptionId;
+                score = correct ? 10 : 0;
+                feedback = correct ? "Correct choice!" : "Try again. Review the passage and attempt once more.";
+            }
+            else
+            {
+                var responseText = (request.ResponseText ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(responseText))
+                    return BadRequest("ResponseText is required for this question.");
+
+                try
+                {
+                    var nlp = await _correctionClient.CorrectAsync(
+                        studentInput: responseText,
+                        prompt: question.Prompt ?? string.Empty,
+                        maxLength: 256);
+
+                    score = Math.Clamp(nlp.Score, 0, 10);
+                    correctedText = nlp.Corrected ?? string.Empty;
+                    changes = nlp.Changes ?? new List<CorrectionChange>();
+                    feedback = nlp.Changes != null && nlp.Changes.Count > 0
+                        ? $"Errors: {nlp.NumErrors}. Provisional score: {score}/10."
+                        : $"Provisional score: {score}/10.";
+                    correct = score >= 10;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Personalized Practice] Correction failed: {ex.Message}");
+                    return StatusCode(500, "Could not score this response. Please try again.");
+                }
+            }
+
+            if (correct)
+            {
+                var errors = await _context.StudentErrors
+                    .Include(se => se.QuestionResponse)
+                    .Where(se =>
+                        se.StudentId == student.Id &&
+                        se.QuestionResponse.LessonQuestionId == question.Id &&
+                        !se.Resolved)
+                    .ToListAsync();
+
+                foreach (var err in errors)
+                    err.Resolved = true;
+
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new PersonalizedAnswerResponse
+            {
+                Correct = correct,
+                Score = score,
+                Feedback = feedback,
+                CorrectedText = correctedText,
+                Changes = changes
+            });
+        }
+
         private int? GetUserIdFromJwt()
         {
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -84,5 +291,38 @@ namespace backend.Controllers
                 ? userId
                 : null;
         }
+    }
+
+    public class BasicAnswerOptionDto
+    {
+        public int Id { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    public class PersonalizedErrorDto
+    {
+        public int QuestionId { get; set; }
+        public string LessonTitle { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string? Prompt { get; set; }
+        public string? ReadingSnippet { get; set; }
+        public List<BasicAnswerOptionDto> AnswerOptions { get; set; } = new();
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class PersonalizedAnswerRequest
+    {
+        public int QuestionId { get; set; }
+        public int? SelectedOptionId { get; set; }
+        public string? ResponseText { get; set; }
+    }
+
+    public class PersonalizedAnswerResponse
+    {
+        public bool Correct { get; set; }
+        public int Score { get; set; }
+        public string Feedback { get; set; } = string.Empty;
+        public string? CorrectedText { get; set; }
+        public List<CorrectionChange> Changes { get; set; } = new();
     }
 }

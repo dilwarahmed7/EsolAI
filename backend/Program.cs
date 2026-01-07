@@ -43,6 +43,13 @@ builder.Services.AddScoped<IQuestionGeneratorService, QuestionGeneratorService>(
 builder.Services.AddScoped<IGeminiClient, GeminiClient>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
+builder.Services.AddHttpClient<ICorrectionClient, CorrectionClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["NLP_BASE_URL"] ?? "http://localhost:8000");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(fullConnString));
 

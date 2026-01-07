@@ -162,6 +162,13 @@
   gap: 6px;
 }
 
+.lesson-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
 .lesson-title-placeholder,
 .lesson-meta-placeholder {
   height: 10px;

@@ -3,6 +3,7 @@ using backend.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Security.Claims;
 
 namespace backend.Controllers
@@ -95,6 +96,23 @@ namespace backend.Controllers
             if (!ownsClass)
                 return Unauthorized("You do not own this class.");
 
+            const double scoreOutOf = 22.0;
+
+            // Average only the first (non-retry) submitted attempts for students in this class
+            var averageLookup = await _context.LessonAttempts
+                .Where(a =>
+                    a.Student.ClassId == classId &&
+                    a.Lesson.TeacherId == teacher.Id &&
+                    a.IsRetry == false &&
+                    a.SubmittedAt != null)
+                .GroupBy(a => a.StudentId)
+                .Select(g => new
+                {
+                    StudentId = g.Key,
+                    AvgRaw = g.Average(a => (double)a.TotalScore)
+                })
+                .ToDictionaryAsync(x => x.StudentId, x => x.AvgRaw);
+
             var students = await _context.Students
                 .Where(s => s.ClassId == classId)
                 .Select(s => new
@@ -105,7 +123,24 @@ namespace backend.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(students);
+            var payload = students.Select(s =>
+            {
+                double? avgPercent = null;
+                if (averageLookup.TryGetValue(s.Id, out var avgRaw))
+                {
+                    avgPercent = Math.Round((avgRaw / scoreOutOf) * 100.0, 1);
+                }
+
+                return new
+                {
+                    s.Id,
+                    s.FullName,
+                    s.Level,
+                    AverageScore = avgPercent
+                };
+            });
+
+            return Ok(payload);
         }
 
         [HttpPost("{classId}/students")]
