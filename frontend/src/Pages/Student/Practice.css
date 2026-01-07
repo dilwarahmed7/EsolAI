@@ -171,6 +171,159 @@
   background: transparent;
 }
 
+.practice-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 20;
+}
+
+.practice-modal {
+  width: min(720px, 95vw);
+  background: var(--bg-surface);
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-strong);
+  padding: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.personalized-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.personalized-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reading-snippet {
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--bg-muted);
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  justify-content: flex-start;
+}
+
+.practice-modal .option-row {
+  display: flex;
+  grid-template-columns: none;
+  justify-content: flex-start;
+}
+
+.option-row.selected {
+  border-color: var(--primary);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.personalized-card .option-row input[type='radio'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.personalized-card .option-row span {
+  flex: 0 1 auto;
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+.text-response textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  padding: 10px;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.personalized-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.answer-banner {
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+}
+
+.answer-banner.success {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.answer-banner.danger {
+  background: #fef2f2;
+  border-color: #fecdd3;
+  color: #7f1d1d;
+}
+
+.change-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.change-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.change-body {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.change-from,
+.change-to {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.change-row .arrow {
+  color: var(--text-secondary);
+}
+
 @media (max-width: 768px) {
   .practice-section {
     padding: 14px;

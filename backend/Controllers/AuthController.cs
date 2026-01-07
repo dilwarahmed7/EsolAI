@@ -94,9 +94,15 @@ namespace backend.Controllers
         {
             var user = await _db.Users
                 .Include(u => u.StudentProfile)
-                .ThenInclude(s => s.Class)
                 .Include(u => u.TeacherProfile)
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+            if (user?.StudentProfile != null)
+            {
+                await _db.Entry(user.StudentProfile)
+                    .Reference(s => s.Class)
+                    .LoadAsync();
+            }
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return Unauthorized("Invalid credentials");
@@ -134,9 +140,15 @@ namespace backend.Controllers
 
             var user = await _db.Users
                 .Include(u => u.StudentProfile)
-                .ThenInclude(s => s.Class)
                 .Include(u => u.TeacherProfile)
                 .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user?.StudentProfile != null)
+            {
+                await _db.Entry(user.StudentProfile)
+                    .Reference(s => s.Class)
+                    .LoadAsync();
+            }
 
             if (user == null)
                 return NotFound("User not found");
