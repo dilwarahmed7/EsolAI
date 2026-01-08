@@ -4,6 +4,11 @@
   align-items: flex-start;
   gap: 16px;
   margin-bottom: 12px;
+  background: linear-gradient(120deg, #ecfeff, #eef2ff);
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid #dbeafe;
+  box-shadow: 0 15px 40px rgba(59, 130, 246, 0.12);
 }
 
 .dashboard-header.student {
@@ -24,6 +29,9 @@
 
 .section-header {
   margin: 12px 0 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .section-header h2 {
@@ -48,17 +56,17 @@
   gap: 12px;
   padding: 16px;
   border-radius: 14px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-soft);
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
 }
 
 .stat-icon {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: var(--bg-muted);
-  color: var(--primary-strong);
+  background: #eef2ff;
+  color: #4f46e5;
   display: grid;
   place-items: center;
   font-size: 1.1rem;
@@ -94,11 +102,11 @@
 }
 
 .quick-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-soft);
+  background: linear-gradient(160deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 16px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -109,8 +117,8 @@
 
 .quick-card:hover {
   transform: translateY(-1px);
-  background: var(--bg-muted);
-  box-shadow: var(--shadow-strong);
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
 }
 
 .quick-card-header {
@@ -146,13 +154,17 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .lesson-dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--primary);
+  background: linear-gradient(120deg, #2563eb, #7c3aed);
 }
 
 .lesson-text {
@@ -207,14 +219,14 @@
 }
 
 .practice-btn.primary {
-  background: var(--primary);
+  background: linear-gradient(120deg, #2563eb, #7c3aed);
   color: var(--primary-contrast);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-soft);
+  border-color: transparent;
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.28);
 }
 
 .practice-btn.primary:hover {
-  background: var(--primary-strong);
+  background: linear-gradient(120deg, #1d4ed8, #6d28d9);
   transform: translateY(-1px);
 }
 
@@ -233,8 +245,8 @@
   width: 100%;
   height: 160px;
   border-radius: 12px;
-  background: var(--bg-muted);
-  border: 1px dashed var(--border-soft);
+  background: linear-gradient(180deg, #f8fafc, #ffffff);
+  border: 1px dashed #e2e8f0;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -253,7 +265,7 @@
 .chart-bar {
   height: 40%;
   border-radius: 6px 6px 2px 2px;
-  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-strong) 100%);
+  background: linear-gradient(180deg, #2563eb 0%, #7c3aed 100%);
   opacity: 0.7;
 }
 
@@ -271,21 +283,74 @@
   margin-left: auto;
   padding: 10px 14px;
   border-radius: 12px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-soft);
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  box-shadow: 0 10px 26px rgba(79, 70, 229, 0.18);
   font-weight: 800;
   color: var(--text-primary);
   min-width: 120px;
   text-align: center;
 }
 
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #ecfeff;
+  color: #0f172a;
+  border: 1px solid #cffafe;
+  font-weight: 700;
+}
+
+.with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dark-mode .dashboard-header {
+  background: linear-gradient(120deg, #0b1224, #101828);
+  border-color: #1f2937;
+  box-shadow: var(--shadow-strong);
+}
+
 .dark-mode .stat-card {
   box-shadow: var(--shadow-strong);
+  background: #0f172a;
+  border-color: #1f2937;
+}
+
+.dark-mode .stat-icon {
+  background: #111827;
+  color: #93c5fd;
 }
 
 .dark-mode .quick-card {
   box-shadow: var(--shadow-strong);
+  background: #0f172a;
+  border-color: #1f2937;
+}
+
+.dark-mode .quick-card:hover {
+  background: #111827;
+}
+
+.dark-mode .lesson-row {
+  border-color: #1f2937;
+  background: #0b1224;
+}
+
+.dark-mode .practice-btn.primary {
+  box-shadow: var(--shadow-strong);
+}
+
+.dark-mode .class-chip,
+.dark-mode .header-badge {
+  background: #0b1224;
+  border-color: #1f2937;
+  color: #cbd5e1;
 }
 
 @media (max-width: 640px) {

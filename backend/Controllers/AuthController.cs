@@ -28,14 +28,11 @@ namespace backend.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
-            // Check if email already exists
             if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
                 return BadRequest("Email already in use");
 
-            // Hash the password
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
-            // Create user
             var user = new User
             {
                 Email = dto.Email,

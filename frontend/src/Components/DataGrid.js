@@ -1,11 +1,6 @@
 import React from 'react';
 import './DataGrid.css';
 
-/**
- * Reusable grid for simple tabular layouts.
- * columns: [{ title, width?, align? }]
- * rows: [{ key?, cells: ReactNode[] }]
- */
 function DataGrid({
   columns = [],
   rows = [],

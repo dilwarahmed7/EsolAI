@@ -27,9 +27,6 @@ namespace backend.Controllers
             return await _db.Teachers.FirstOrDefaultAsync(t => t.UserId == userId);
         }
 
-        // ------------------------------------------------
-        // Queue of pending writing/speaking reviews
-        // ------------------------------------------------
         [HttpGet]
         public async Task<IActionResult> GetPendingQueue()
         {
@@ -85,9 +82,6 @@ namespace backend.Controllers
             return Ok(queue);
         }
 
-        // ------------------------------------------------
-        // Complete a review (writing/speaking)
-        // ------------------------------------------------
         [HttpPost("{attemptId:int}/complete")]
         public async Task<IActionResult> CompleteReview(int attemptId, [FromBody] CompleteReviewRequest dto)
         {
@@ -136,7 +130,6 @@ namespace backend.Controllers
                 if (resp.FeedbackReview == null)
                     _db.FeedbackReviews.Add(review);
 
-                // Allow teacher to override the corrected text and feedback text
                 if (!string.IsNullOrWhiteSpace(incoming.CorrectedText))
                     review.AiCorrections = incoming.CorrectedText.Trim();
 

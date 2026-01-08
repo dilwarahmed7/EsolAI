@@ -14,7 +14,6 @@ namespace backend.Models
         [Required]
         public string FullName { get; set; } = string.Empty;
 
-        // Navigation property
         public User User { get; set; } = null!;
     }
 }

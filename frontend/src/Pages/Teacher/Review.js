@@ -1,20 +1,40 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import PageLayout from '../../Components/PageLayout';
 import './Review.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher/reviews';
+const HIDE_CHANGES_MARKER = '[HIDE_AI_CHANGES]';
 
-const buildReviewForm = (item) => {
+const parseChangesFromFeedback = (aiFeedback) => {
+  if (!aiFeedback || typeof aiFeedback !== 'string') return [];
+  const marker = 'Changes:';
+  const idx = aiFeedback.indexOf(marker);
+  if (idx === -1) return [];
+  const json = aiFeedback.slice(idx + marker.length).trim();
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const buildReviewState = (item) => {
   const form = {};
-  if (!item || !item.responses) return form;
+  const hidden = {};
+  if (!item || !item.responses) return { form, hidden };
   item.responses.forEach((resp) => {
+    const rawFeedback = resp.teacherFeedback || '';
+    const hide = rawFeedback.includes(HIDE_CHANGES_MARKER);
+    const cleanedFeedback = rawFeedback.replace(HIDE_CHANGES_MARKER, '').trim();
     form[resp.questionResponseId] = {
       correctedText: resp.aiCorrections || '',
-      teacherFeedback: resp.teacherFeedback || resp.aiFeedback || '',
+      teacherFeedback: cleanedFeedback,
       teacherScore: resp.teacherScore ?? (typeof resp.aiScore === 'number' ? resp.aiScore : ''),
     };
+    hidden[resp.questionResponseId] = hide;
   });
-  return form;
+  return { form, hidden };
 };
 
 function Review({ role }) {
@@ -24,8 +44,9 @@ function Review({ role }) {
   const [reviewError, setReviewError] = useState('');
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewForm, setReviewForm] = useState({});
+  const [hiddenChanges, setHiddenChanges] = useState({});
 
-  const loadReviewQueue = async () => {
+  const loadReviewQueue = useCallback(async () => {
     if (!token) return;
     setReviewLoading(true);
     setReviewError('');
@@ -51,24 +72,26 @@ function Review({ role }) {
               aiCorrections: r.aiCorrections || r.AiCorrections,
               aiFeedback: r.aiFeedback || r.AiFeedback,
               aiScore: r.aiScore ?? r.AiScore,
-              teacherFeedback: r.teacherFeedback || r.TeacherFeedback,
-              teacherScore: r.teacherScore ?? r.TeacherScore,
-            })),
-          }))
-        : [];
-      setReviewQueue(list);
-      setReviewForm(buildReviewForm(list[0]));
-    } catch (err) {
-      console.error(err);
-      setReviewError(err.message || 'Failed to load review queue.');
+            teacherFeedback: r.teacherFeedback || r.TeacherFeedback,
+            teacherScore: r.teacherScore ?? r.TeacherScore,
+          })),
+        }))
+      : [];
+    setReviewQueue(list);
+    const built = buildReviewState(list[0]);
+    setReviewForm(built.form);
+    setHiddenChanges(built.hidden);
+  } catch (err) {
+    console.error(err);
+    setReviewError(err.message || 'Failed to load review queue.');
     } finally {
       setReviewLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     loadReviewQueue();
-  }, []);
+  }, [loadReviewQueue]);
 
   const handleReviewChange = (respId, field, value) => {
     setReviewForm((prev) => ({
@@ -89,10 +112,17 @@ function Review({ role }) {
       const payload = {
         responses: current.responses.map((r) => {
           const form = reviewForm[r.questionResponseId] || {};
+          const hide = hiddenChanges[r.questionResponseId];
+          let teacherFeedback = form.teacherFeedback ?? '';
+          if (hide) {
+            teacherFeedback = teacherFeedback
+              ? `${teacherFeedback}\n${HIDE_CHANGES_MARKER}`
+              : HIDE_CHANGES_MARKER;
+          }
           return {
             questionResponseId: r.questionResponseId,
             correctedText: form.correctedText ?? r.aiCorrections ?? '',
-            teacherFeedback: form.teacherFeedback ?? r.aiFeedback ?? '',
+            teacherFeedback,
             teacherScore: Number.isFinite(Number(form.teacherScore))
               ? Number(form.teacherScore)
               : r.aiScore ?? 0,
@@ -176,46 +206,85 @@ function Review({ role }) {
                   <div className="review-questions">
                     {item.responses.map((resp) => {
                       const form = reviewForm[resp.questionResponseId] || {};
+                      const changes = parseChangesFromFeedback(resp.aiFeedback);
+                      const hideChanges = hiddenChanges[resp.questionResponseId];
+                      const showChanges = !hideChanges && changes.length > 0;
                       return (
                         <div className="question-card" key={resp.questionResponseId}>
                           <div className="question-head">
                             <div>
                               <p className="eyebrow">{resp.type}</p>
-                              <h4>{resp.prompt}</h4>
+                          <h4>{resp.prompt}</h4>
+                        </div>
+                        <span className="chip-small info">
+                          AI score: {resp.aiScore != null ? `${resp.aiScore}/10` : '—'}
+                        </span>
+                      </div>
+
+                      <div className="feedback-block">
+                        <div className="feedback-row">
+                          <h5>Student answer</h5>
+                          <div className="feedback-box">{resp.studentAnswer || 'No answer provided.'}</div>
+                        </div>
+                        <div className="feedback-row">
+                          <h5>Corrected sentence (edit)</h5>
+                          <textarea
+                            className="feedback-textarea"
+                            rows={3}
+                            value={form.correctedText ?? ''}
+                            onChange={(e) =>
+                              handleReviewChange(resp.questionResponseId, 'correctedText', e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="feedback-row">
+                          <h5>Feedback to student (edit)</h5>
+                          <textarea
+                            className="feedback-textarea"
+                            rows={3}
+                            value={form.teacherFeedback ?? ''}
+                            onChange={(e) =>
+                              handleReviewChange(resp.questionResponseId, 'teacherFeedback', e.target.value)
+                            }
+                          />
+                        </div>
+                        {changes.length > 0 ? (
+                          <div className="feedback-row">
+                            <div className="change-list">
+                              {showChanges
+                                ? changes.map((c, idx) => (
+                                    <div className="change-row" key={`ai-change-${resp.questionResponseId}-${idx}`}>
+                                      <span className="pill tiny">{(c.type || c.Type || 'change').toString()}</span>
+                                      <div className="change-body">
+                                        <div className="change-from">
+                                          <span className="muted">From</span>
+                                          <strong>{c.from || c.From || ''}</strong>
+                                        </div>
+                                        <span className="arrow">→</span>
+                                        <div className="change-to">
+                                          <span className="muted">To</span>
+                                          <strong>{c.to || c.To || ''}</strong>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))
+                                : null}
                             </div>
-                            <span className="chip-small info">
-                              AI score: {resp.aiScore != null ? `${resp.aiScore}/10` : '—'}
-                            </span>
-                          </div>
-
-                          <div className="feedback-block">
-                            <h5>Student answer</h5>
-                            <p>{resp.studentAnswer}</p>
-                            <h5>AI corrections</h5>
-                            <p>{resp.aiCorrections || '—'}</p>
-                            <p className="muted">{resp.aiFeedback}</p>
-                          </div>
-
-                          <div className="form-row">
-                            <label>Corrected sentence (teacher)</label>
-                            <textarea
-                              rows={3}
-                              value={form.correctedText ?? ''}
-                              onChange={(e) =>
-                                handleReviewChange(resp.questionResponseId, 'correctedText', e.target.value)
+                            <button
+                              type="button"
+                              className="ghost-btn small"
+                              onClick={() =>
+                                setHiddenChanges((prev) => ({
+                                  ...prev,
+                                  [resp.questionResponseId]: !hideChanges,
+                                }))
                               }
-                            />
+                            >
+                              {hideChanges ? 'Show detected changes' : 'Remove detected changes'}
+                            </button>
                           </div>
-                          <div className="form-row">
-                            <label>Feedback to student</label>
-                            <textarea
-                              rows={3}
-                              value={form.teacherFeedback ?? ''}
-                              onChange={(e) =>
-                                handleReviewChange(resp.questionResponseId, 'teacherFeedback', e.target.value)
-                              }
-                            />
-                          </div>
+                        ) : null}
+                      </div>
                           <div className="form-row score-input-row">
                             <label>Final score (0-10)</label>
                             <input

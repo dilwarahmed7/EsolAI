@@ -107,10 +107,6 @@ const stripChangesText = (text) => {
   return idx === -1 ? text : text.slice(0, idx).trim();
 };
 
-// Parse text blocks like:
-// CORRECTED: ...
-// CHANGES DETECTED (2 changes):
-// 1. (replaced) 'is jumper' → 'are jumpers'
 const parseChangeLines = (text) => {
   if (!text) return [];
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -133,7 +129,6 @@ const parseChangeLines = (text) => {
       continue;
     }
 
-    // Fallback: split on arrow even if formatting differs
     const arrowIdx = line.indexOf('→') !== -1 ? line.indexOf('→') : line.indexOf('->');
     if (arrowIdx !== -1) {
       const left = line.slice(0, arrowIdx).replace(/^\d+\.\s*/, '').trim().replace(/['"“”]/g, '');
@@ -160,7 +155,6 @@ const changesFromFeedback = (feedback) => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
     } catch {
-      // ignore parse errors and fall back
     }
   }
 
@@ -177,6 +171,49 @@ const changesFromFeedback = (feedback) => {
   return parseChangeLines(combinedText);
 };
 
+const deriveScores = (detail) => {
+  if (!detail) return { reading: 0, writing: 0, speaking: 0, total: null };
+  const attemptMeta = mapAttemptMeta(detail) || {};
+  const questions = mapQuestionsFromDetail(detail);
+
+  let reading = 0;
+  let writing = null;
+  let speaking = null;
+
+  questions.forEach((q) => {
+    const resp = q.Response || q.response;
+    if (!resp) return;
+    const type = q.Type || q.type;
+    if (type === 'Reading') {
+      const score = Number(resp.Score ?? resp.score ?? 0);
+      reading += Number.isFinite(score) ? score : 0;
+    } else if (type === 'Writing') {
+      const feedback = resp.Feedback || resp.feedback || {};
+      const teacherScore = feedback.TeacherScore ?? feedback.teacherScore;
+      const score = Number(
+        teacherScore ?? resp.AiScore ?? resp.aiScore ?? resp.Score ?? resp.score ?? attemptMeta.WritingScore ?? attemptMeta.writingScore ?? 0
+      );
+      if (Number.isFinite(score)) writing = (writing ?? 0) + score;
+    } else if (type === 'Speaking') {
+      const feedback = resp.Feedback || resp.feedback || {};
+      const teacherScore = feedback.TeacherScore ?? feedback.teacherScore;
+      const score = Number(
+        teacherScore ?? resp.AiScore ?? resp.aiScore ?? resp.Score ?? resp.score ?? attemptMeta.SpeakingScore ?? attemptMeta.speakingScore ?? 0
+      );
+      if (Number.isFinite(score)) speaking = (speaking ?? 0) + score;
+    }
+  });
+
+  if (writing === null) writing = attemptMeta.WritingScore ?? attemptMeta.writingScore ?? 0;
+  if (speaking === null) speaking = attemptMeta.SpeakingScore ?? attemptMeta.speakingScore ?? 0;
+
+  const total = Number.isFinite(reading + writing + speaking)
+    ? reading + writing + speaking
+    : attemptMeta.TotalScore ?? attemptMeta.totalScore ?? null;
+
+  return { reading, writing, speaking, total };
+};
+
 function MyLessons({ role }) {
   const token = useMemo(() => sessionStorage.getItem('token') || localStorage.getItem('token'), []);
   const [lessons, setLessons] = useState([]);
@@ -186,8 +223,8 @@ function MyLessons({ role }) {
   const [attemptDetail, setAttemptDetail] = useState(null);
   const [activeLesson, setActiveLesson] = useState(null);
   const [responses, setResponses] = useState({});
-  const [modalMode, setModalMode] = useState('work'); // work | feedback
-  const [selectedFeedbackAttempt, setSelectedFeedbackAttempt] = useState('latest'); // latest | original | retry
+  const [modalMode, setModalMode] = useState('work');
+  const [selectedFeedbackAttempt, setSelectedFeedbackAttempt] = useState('original');
   const [loadingAttempt, setLoadingAttempt] = useState(false);
   const [savingProgress, setSavingProgress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -307,7 +344,7 @@ function MyLessons({ role }) {
     setResponses({});
     setActiveLesson(null);
     setModalMode('work');
-    setSelectedFeedbackAttempt('latest');
+    setSelectedFeedbackAttempt('original');
     setAttemptMessage('');
     setMicError('');
   };
@@ -339,6 +376,16 @@ function MyLessons({ role }) {
     try {
       let targetAttemptId = attemptId || lesson?.activeAttempt?.attemptId;
       let startedAt = lesson?.activeAttempt?.startedAt;
+
+      if (viewFeedback) {
+        if (lesson?.originalAttempt?.attemptId) {
+          targetAttemptId = lesson.originalAttempt.attemptId;
+          setSelectedFeedbackAttempt('original');
+        } else if (lesson?.retryAttempt?.attemptId) {
+          targetAttemptId = lesson.retryAttempt.attemptId;
+          setSelectedFeedbackAttempt('retry');
+        }
+      }
 
       if (!targetAttemptId && !viewFeedback) {
         const startRes = await fetch(`${API_BASE}/${lesson.id}/start`, {
@@ -569,6 +616,8 @@ function MyLessons({ role }) {
     const teacherScore = feedback?.TeacherScore ?? feedback?.teacherScore;
     const aiScore = resp?.AiScore ?? resp?.aiScore ?? null;
     const scoreLabel = teacherScore != null ? `${teacherScore}/10` : aiScore != null ? `${aiScore}/10` : '—';
+    const isFinalScore =
+      teacherScore != null || attemptMeta.TeacherReviewCompleted || attemptMeta.teacherReviewCompleted;
     const isSpeaking = type === 'Speaking';
     const changes = changesFromFeedback(feedback);
     const feedbackText = stripChangesText(
@@ -582,7 +631,9 @@ function MyLessons({ role }) {
             <p className="eyebrow">{type}</p>
             <h4>{q.Prompt || q.prompt}</h4>
           </div>
-          {inFeedback && <span className="chip-small info">Provisional score: {scoreLabel}</span>}
+          {inFeedback && (
+            <span className="chip-small info">{isFinalScore ? 'Final score' : 'Provisional score'}: {scoreLabel}</span>
+          )}
         </div>
         <div className="text-response">
           <textarea
@@ -647,7 +698,9 @@ function MyLessons({ role }) {
     attemptMeta.scoreOutOf ??
     activeLesson?.scoreOutOf ??
     FALLBACK_OUT_OF;
-  const totalScore = attemptMeta.TotalScore ?? attemptMeta.totalScore;
+  const awaitingReview = attemptMeta.needsTeacherReview && !attemptMeta.teacherReviewCompleted;
+  const derivedScores = deriveScores(attemptDetail);
+  const totalScore = derivedScores.total ?? attemptMeta.TotalScore ?? attemptMeta.totalScore;
   const retryAllowed = activeLesson?.retryAllowed ?? false;
   const originalAttemptId = activeLesson?.originalAttempt?.attemptId;
   const retryAttemptId = activeLesson?.retryAttempt?.attemptId;
@@ -815,14 +868,15 @@ function MyLessons({ role }) {
               <div className="score-pill">
                 <span>Score</span>
                 <strong>{totalScore != null ? `${totalScore}/${scoreOutOf}` : '—'}</strong>
+                {awaitingReview ? <span className="pill tiny muted">Provisional</span> : null}
               </div>
               <div className="pill-stack">
-                <span className="pill tiny">Reading: {attemptMeta.ReadingScore ?? attemptMeta.readingScore ?? 0}/2</span>
+                <span className="pill tiny">Reading: {derivedScores.reading}/2</span>
                 <span className="pill tiny">
-                  Writing: {attemptMeta.WritingScore ?? attemptMeta.writingScore ?? 0}/10
+                  Writing: {derivedScores.writing}/10 {awaitingReview ? '(provisional)' : ''}
                 </span>
                 <span className="pill tiny">
-                  Speaking: {attemptMeta.SpeakingScore ?? attemptMeta.speakingScore ?? 0}/10
+                  Speaking: {derivedScores.speaking}/10 {awaitingReview ? '(provisional)' : ''}
                 </span>
               </div>
               {modalMode === 'feedback' && originalAttemptId && retryAttemptId ? (

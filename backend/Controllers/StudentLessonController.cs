@@ -571,10 +571,25 @@ namespace backend.Controllers
 
         private LessonAttemptSummaryDto BuildAttemptSummary(LessonAttempt attempt)
         {
-            var writing = attempt.Responses.FirstOrDefault(r => r.LessonQuestion.Type == QuestionType.Writing)?.AiScore
-                          ?? attempt.WritingScore;
-            var speaking = attempt.Responses.FirstOrDefault(r => r.LessonQuestion.Type == QuestionType.Speaking)?.AiScore
-                           ?? attempt.SpeakingScore;
+            int ResolveScore(QuestionType type, int fallback)
+            {
+                var response = attempt.Responses.FirstOrDefault(r => r.LessonQuestion.Type == type);
+                if (response == null)
+                    return fallback;
+
+                // Prefer explicit teacher score, then the stored score after review, then AI score.
+                if (response.FeedbackReview?.TeacherScore != null)
+                    return response.FeedbackReview.TeacherScore.Value;
+                if (!response.NeedsReview || attempt.TeacherReviewCompleted)
+                    return response.Score;
+                if (response.AiScore != null)
+                    return response.AiScore.Value;
+
+                return fallback;
+            }
+
+            var writing = ResolveScore(QuestionType.Writing, attempt.WritingScore);
+            var speaking = ResolveScore(QuestionType.Speaking, attempt.SpeakingScore);
             var total = attempt.ReadingScore + writing + speaking;
 
             return new LessonAttemptSummaryDto

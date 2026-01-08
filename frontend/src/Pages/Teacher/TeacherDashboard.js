@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaPlus, FaChartLine, FaBookOpen, FaUsers } from 'react-icons/fa';
+import { FaPlus, FaChartLine, FaBookOpen, FaUsers, FaCheckCircle } from 'react-icons/fa';
 import PageLayout from '../../Components/PageLayout';
 import './TeacherDashboard.css';
 
@@ -23,6 +23,15 @@ function TeacherDashboard({ role }) {
     const profile = parsed.profile || {};
     return profile.fullName || profile.FullName || 'Teacher';
   }, []);
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      }),
+    []
+  );
   const [classes, setClasses] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(true);
@@ -142,8 +151,9 @@ function TeacherDashboard({ role }) {
     <PageLayout title={null} role={role}>
       <div className="dashboard-header">
         <div>
-          <p className="eyebrow">Welcome back</p>
+          <p className="eyebrow">{todayLabel}</p>
           <h1 className="page-title">Welcome back, {teacherName}</h1>
+          <p className="section-subtitle">Track class progress, publish lessons, and review student work.</p>
         </div>
         <div className="header-actions">
           <button
@@ -158,7 +168,10 @@ function TeacherDashboard({ role }) {
 
       <div className="section-header">
         <h2>Classroom at a glance</h2>
-        <p className="section-subtitle">Key metrics to keep you on track</p>
+        <div className="header-badge">
+          <FaCheckCircle />
+          Key metrics to keep you on track
+        </div>
       </div>
 
       <div className="stats-grid">
