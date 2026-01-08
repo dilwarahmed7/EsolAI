@@ -8,6 +8,8 @@ import {
   FaUsers,
   FaPencilAlt,
   FaMarker,
+  FaChevronLeft,
+  FaChevronRight,
 } from 'react-icons/fa';
 import Profile from './Profile';
 
@@ -16,6 +18,11 @@ function Sidebar({ role = 'student' }) {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem('sidebarCollapsed');
+    return stored === 'true';
+  });
 
   const linksByRole = {
     student: [
@@ -74,8 +81,16 @@ function Sidebar({ role = 'student' }) {
     navigate('/profile');
   };
 
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('sidebarCollapsed', String(next));
+      return next;
+    });
+  };
+
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <Link to="/" className="logo-link">
           <img src="/images/EsolAI.png" alt="EsolAI Logo" className="logo" />
@@ -101,6 +116,18 @@ function Sidebar({ role = 'student' }) {
             </Link>
           ))}
         </div>
+      </div>
+
+      <div className="sidebar-footer">
+        <button
+          type="button"
+          className="collapse-btn"
+          onClick={toggleCollapsed}
+          aria-label="Toggle sidebar"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <FaChevronRight /> : <FaChevronLeft />}
+        </button>
       </div>
     </div>
   );

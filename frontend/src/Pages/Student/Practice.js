@@ -92,7 +92,6 @@ function Practice({ role }) {
     if (listening && personalized[activePersonalizedIndex]?.type !== 'Speaking') {
       stopMic();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listening, personalized, activePersonalizedIndex]);
 
   useEffect(() => {
@@ -243,7 +242,6 @@ function Practice({ role }) {
   };
 
   useEffect(() => {
-    // Clear any old feedback when moving between personalized questions
     setAnswerResult(null);
     setMicError('');
   }, [activePersonalizedIndex]);
@@ -352,7 +350,6 @@ function Practice({ role }) {
       const nextList = [...prevList];
       nextList.splice(activePersonalizedIndex, 1);
 
-      // If incorrect, move the item to the back of the queue.
       if (!isCleared) {
         nextList.push(current);
       }

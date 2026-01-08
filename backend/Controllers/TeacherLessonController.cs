@@ -19,9 +19,6 @@ namespace backend.Controllers
             _db = db;
         }
 
-        // ----------------------------
-        // Helpers
-        // ----------------------------
         private int GetUserId()
         {
             return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -33,9 +30,6 @@ namespace backend.Controllers
             return await _db.Teachers.FirstOrDefaultAsync(t => t.UserId == userId);
         }
 
-        // ----------------------------
-        // 1) Create lesson as Draft
-        // ----------------------------
         [HttpPost]
         public async Task<IActionResult> CreateDraft([FromBody] CreateLessonRequest dto)
         {
@@ -68,9 +62,6 @@ namespace backend.Controllers
             });
         }
 
-        // ----------------------------
-        // 2) List teacher lessons
-        // ----------------------------
         [HttpGet]
         public async Task<IActionResult> GetMyLessons([FromQuery] int? classId = null)
         {
@@ -103,9 +94,6 @@ namespace backend.Controllers
             return Ok(lessons);
         }
 
-        // ----------------------------
-        // 3) Get a lesson for editing dialog
-        // ----------------------------
         [HttpGet("{lessonId:int}")]
         public async Task<IActionResult> GetLesson(int lessonId)
         {
@@ -144,9 +132,6 @@ namespace backend.Controllers
             });
         }
 
-        // ----------------------------
-        // 4) Update basic lesson fields (autosave title/due/status if needed)
-        // ----------------------------
         [HttpPut("{lessonId:int}")]
         public async Task<IActionResult> UpdateLesson(int lessonId, [FromBody] UpdateLessonRequest dto)
         {
@@ -165,7 +150,6 @@ namespace backend.Controllers
 
             lesson.DueDate = dto.DueDate;
 
-            // Only allow Draft/Archived changes here; publishing is via /publish endpoint
             if (dto.Status.HasValue && dto.Status.Value != LessonStatus.Published)
                 lesson.Status = dto.Status.Value;
 
@@ -182,10 +166,6 @@ namespace backend.Controllers
             });
         }
 
-        // ----------------------------
-        // 5) Upsert ALL questions (dialog autosave-friendly)
-        //    - expects exactly 4 questions in your app design
-        // ----------------------------
         [HttpPut("{lessonId:int}/questions")]
         public async Task<IActionResult> UpsertQuestions(int lessonId, [FromBody] UpsertLessonQuestionsRequest dto)
         {
@@ -204,15 +184,12 @@ namespace backend.Controllers
             if (lesson == null)
                 return NotFound("Lesson not found.");
 
-            // Simple approach: replace questions entirely (easiest for autosave)
-            // Remove existing answer options and questions
             foreach (var existingQ in lesson.Questions)
             {
                 _db.AnswerOptions.RemoveRange(existingQ.AnswerOptions);
             }
             _db.LessonQuestions.RemoveRange(lesson.Questions);
 
-            // Add incoming questions
             var newQuestions = new List<LessonQuestion>();
 
             foreach (var q in dto.Questions)
@@ -232,7 +209,6 @@ namespace backend.Controllers
                     ReadingSnippet = string.IsNullOrWhiteSpace(q.ReadingSnippet) ? null : q.ReadingSnippet.Trim()
                 };
 
-                // Reading questions require MCQ options
                 if (type == QuestionType.Reading)
                 {
                     if (string.IsNullOrWhiteSpace(entity.ReadingSnippet))
@@ -259,8 +235,7 @@ namespace backend.Controllers
                 }
                 else
                 {
-                    // Writing/Speaking should not have MCQ options
-                    // (we just ignore if sent accidentally)
+
                 }
 
                 newQuestions.Add(entity);
@@ -278,9 +253,6 @@ namespace backend.Controllers
             });
         }
 
-        // ----------------------------
-        // 6) Assign lesson to classes
-        // ----------------------------
         [HttpPost("{lessonId:int}/assign")]
         public async Task<IActionResult> AssignToClasses(int lessonId, [FromBody] AssignLessonRequest dto)
         {
@@ -298,7 +270,6 @@ namespace backend.Controllers
             if (lesson == null)
                 return NotFound("Lesson not found.");
 
-            // Validate classes belong to this teacher
             var distinctClassIds = dto.ClassIds.Distinct().ToList();
 
             var ownedClassIds = await _db.Classes
@@ -309,7 +280,6 @@ namespace backend.Controllers
             if (ownedClassIds.Count != distinctClassIds.Count)
                 return BadRequest("One or more class IDs are invalid or not owned by this teacher.");
 
-            // Replace assignments
             _db.LessonAssignments.RemoveRange(lesson.Assignments);
 
             foreach (var classId in distinctClassIds)
@@ -332,11 +302,6 @@ namespace backend.Controllers
             });
         }
 
-        // ----------------------------
-        // 7) Publish lesson
-        //    - must have exactly 4 questions:
-        //      2 Reading, 1 Writing, 1 Speaking
-        // ----------------------------
         [HttpPost("{lessonId:int}/publish")]
         public async Task<IActionResult> Publish(int lessonId)
         {
@@ -353,11 +318,9 @@ namespace backend.Controllers
             if (lesson == null)
                 return NotFound("Lesson not found.");
 
-            // Validate assignments: must be assigned to at least one class
             if (lesson.Assignments.Count == 0)
                 return BadRequest("Lesson must be assigned to at least one class before publishing.");
 
-            // Validate questions
             var questions = lesson.Questions;
 
             if (questions.Count != 4)
@@ -397,11 +360,6 @@ namespace backend.Controllers
         }
     }
 
-    // ============================================================
-    // DTOs (kept in same file for convenience)
-    // You can move to backend/Models/DTOs later.
-    // ============================================================
-
     public class CreateLessonRequest
     {
         public string Title { get; set; } = string.Empty;
@@ -428,11 +386,9 @@ namespace backend.Controllers
     public class UpsertLessonQuestionDto
     {
         public QuestionType Type { get; set; }
-        public int Order { get; set; }               // 1..4
-        public string? ReadingSnippet { get; set; }  // required for Reading
+        public int Order { get; set; }
+        public string? ReadingSnippet { get; set; }
         public string Prompt { get; set; } = string.Empty;
-
-        // Only for Reading questions
         public List<UpsertAnswerOptionDto>? AnswerOptions { get; set; }
     }
 

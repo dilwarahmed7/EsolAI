@@ -98,7 +98,6 @@ namespace backend.Controllers
 
             const double scoreOutOf = 22.0;
 
-            // Average only the first (non-retry) submitted attempts for students in this class
             var averageLookup = await _context.LessonAttempts
                 .Where(a =>
                     a.Student.ClassId == classId &&

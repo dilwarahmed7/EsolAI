@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChartLine, FaLayerGroup, FaListOl } from 'react-icons/fa';
+import { FaChartLine, FaLayerGroup, FaListOl, FaBolt } from 'react-icons/fa';
 import PageLayout from '../../Components/PageLayout';
 import './StudentDashboard.css';
 
@@ -89,9 +89,18 @@ const QuickCard = ({ title, subtitle, children, onClick }) => (
 function StudentDashboard({ role }) {
   const navigate = useNavigate();
   const token = useMemo(() => sessionStorage.getItem('token') || localStorage.getItem('token'), []);
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      }),
+    []
+  );
   const [lessons, setLessons] = useState([]);
   const [loadingLessons, setLoadingLessons] = useState(false);
-  const { studentName, averageScore, proficiencyLevel, lessonsToComplete, className } = useMemo(() => {
+  const { studentName, averageScore, proficiencyLevel, className } = useMemo(() => {
     const stored = localStorage.getItem('user');
     const parsed = stored ? JSON.parse(stored) : {};
     const profile = parsed.profile || {};
@@ -100,7 +109,6 @@ function StudentDashboard({ role }) {
       studentName: profile.fullName || profile.FullName || 'Student',
       averageScore: profile.averageScore ?? profile.AverageScore ?? '--',
       proficiencyLevel: profile.level || profile.Level || 'N/A',
-      lessonsToComplete: profile.lessonsToComplete ?? profile.LessonsToComplete ?? '--',
       className: profile.className || profile.ClassName || '',
     };
   }, []);
@@ -182,15 +190,19 @@ function StudentDashboard({ role }) {
     <PageLayout title={null} role={role}>
       <div className="dashboard-header student">
         <div>
-          <p className="eyebrow">Welcome back</p>
+          <p className="eyebrow">{todayLabel}</p>
           <h1 className="page-title">Welcome back, {studentName}</h1>
+          <p className="section-subtitle">Stay on top of assignments and track your growth.</p>
         </div>
         {className ? <div className="class-chip">{className}</div> : null}
       </div>
 
       <div className="section-header">
         <h2>Your progress at a glance</h2>
-        <p className="section-subtitle">Stay on top of your learning goals</p>
+        <div className="header-badge with-icon">
+          <FaBolt />
+          Your learning, simplified
+        </div>
       </div>
 
       <div className="stats-grid">

@@ -189,7 +189,6 @@ namespace backend.Controllers
             if (question == null)
                 return NotFound("Question not found.");
 
-            // Validate the student has this question in a reviewed attempt and not yet perfected
             var relevantResponses = await _context.QuestionResponses
                 .Include(r => r.LessonAttempt)
                 .Where(r =>

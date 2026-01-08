@@ -188,6 +188,8 @@
   width: min(960px, calc(100% - 32px));
   max-height: 92vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-surface);
   border-radius: 16px;
   border: 1px solid var(--border-soft);
@@ -251,8 +253,8 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1 1 auto;
   overflow: auto;
-  max-height: calc(72vh - 60px);
   padding: 4px 4px 12px;
   box-sizing: border-box;
 }
