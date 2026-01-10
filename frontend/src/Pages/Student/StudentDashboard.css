@@ -1,32 +1,3 @@
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 12px;
-  background: linear-gradient(120deg, #ecfeff, #eef2ff);
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: 1px solid #dbeafe;
-  box-shadow: 0 15px 40px rgba(59, 130, 246, 0.12);
-}
-
-.dashboard-header.student {
-  justify-content: space-between;
-}
-
-.page-title {
-  margin: 4px 0 0;
-  color: var(--text-primary);
-}
-
-.eyebrow {
-  margin: 0;
-  font-size: 0.9rem;
-  letter-spacing: 0.4px;
-  color: var(--text-secondary);
-}
-
 .section-header {
   margin: 12px 0 8px;
   display: flex;
@@ -310,11 +281,6 @@
   gap: 6px;
 }
 
-.dark-mode .dashboard-header {
-  background: linear-gradient(120deg, #0b1224, #101828);
-  border-color: #1f2937;
-  box-shadow: var(--shadow-strong);
-}
 
 .dark-mode .stat-card {
   box-shadow: var(--shadow-strong);

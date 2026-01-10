@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PageLayout from '../../Components/PageLayout';
+import Hero from '../../Components/Hero';
 import DataGrid from '../../Components/DataGrid';
 import './MyLessons.css';
 
@@ -106,6 +107,21 @@ const stripChangesText = (text) => {
   const idx = text.indexOf('Changes:');
   return idx === -1 ? text : text.slice(0, idx).trim();
 };
+
+const Icon = ({ children, className = '' }) => (
+  <svg
+    className={`icon ${className}`.trim()}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+);
 
 const parseChangeLines = (text) => {
   if (!text) return [];
@@ -331,6 +347,17 @@ function MyLessons({ role }) {
 
   const activeRows = rows.filter((r) => r.computedStatus !== 'Completed');
   const completedRows = rows.filter((r) => r.computedStatus === 'Completed');
+  const nextDueLabel = useMemo(() => {
+    const dueDates = activeRows
+      .map((lesson) => lesson.dueDate)
+      .filter(Boolean)
+      .map((raw) => new Date(raw))
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .sort((a, b) => a - b);
+
+    if (!dueDates.length) return 'No upcoming due date';
+    return formatDate(dueDates[0]);
+  }, [activeRows]);
 
   const stopListening = () => {
     if (recognitionRef.current && listening) {
@@ -706,21 +733,73 @@ function MyLessons({ role }) {
   const retryAttemptId = activeLesson?.retryAttempt?.attemptId;
 
   return (
-    <PageLayout title="My Lessons" role={role}>
+    <PageLayout title={null} role={role}>
       <div className="student-lessons">
-        <div className="header-row">
-          <div>
-            <p className="eyebrow">Assigned to you</p>
-            <p className="section-subtitle">Work through your lessons.</p>
-          </div>
-        </div>
+        <Hero
+          eyebrow="Assigned to you"
+          title="My Lessons"
+          subtitle="Work through your lessons."
+          variant="student"
+          icon={
+            <Icon>
+              <path d="M2 4.5h7a4 4 0 0 1 4 4v11.5a3 3 0 0 0-3-3H2z" />
+              <path d="M22 4.5h-7a4 4 0 0 0-4 4v11.5a3 3 0 0 1 3-3h8z" />
+            </Icon>
+          }
+          meta={[
+            {
+              label: `${activeRows.length} active`,
+              icon: (
+                <Icon className="mini-icon">
+                  <path d="M6 6h12" />
+                  <path d="M6 12h12" />
+                  <path d="M6 18h8" />
+                </Icon>
+              ),
+            },
+            {
+              label: `${completedRows.length} completed`,
+              tone: 'ghost',
+              icon: (
+                <Icon className="mini-icon">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+                </Icon>
+              ),
+            },
+            {
+              label: `Next due: ${nextDueLabel}`,
+              tone: 'subtle',
+              icon: (
+                <Icon className="mini-icon">
+                  <path d="M7 3v3" />
+                  <path d="M17 3v3" />
+                  <rect x="3" y="6" width="18" height="14" rx="2" />
+                  <path d="M3 10h18" />
+                </Icon>
+              ),
+            },
+          ]}
+        />
 
         {error ? <div className="notice error">{error}</div> : null}
 
         <div className="data-card">
           <div className="data-header">
             <div>
-              <h3>To Do</h3>
+              <h3 className="section-title">
+                <span className="section-icon">
+                  <Icon>
+                    <rect x="4" y="5" width="4" height="4" rx="1" />
+                    <path d="M10 7h10" />
+                    <rect x="4" y="11" width="4" height="4" rx="1" />
+                    <path d="M10 13h10" />
+                    <rect x="4" y="17" width="4" height="4" rx="1" />
+                    <path d="M10 19h10" />
+                  </Icon>
+                </span>
+                To Do
+              </h3>
               <p className="section-subtitle">
                 {loading
                   ? 'Loading lessons…'
@@ -732,10 +811,49 @@ function MyLessons({ role }) {
           <DataGrid
             loading={loading}
             emptyMessage="No active lessons."
+            className="lessons-grid"
             columns={[
-              { title: 'Name', width: '1.6fr' },
-              { title: 'Due date', align: 'center', width: '1fr' },
-              { title: 'Status', align: 'center', width: '1fr' },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon className="col-icon">
+                      <path d="M3 4h7a4 4 0 0 1 4 4v12a2 2 0 0 0-2-2H3z" />
+                      <path d="M21 4h-7a4 4 0 0 0-4 4v12a2 2 0 0 1 2-2h9z" />
+                    </Icon>
+                    Name
+                  </span>
+                ),
+                width: '1.6fr',
+              },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon className="col-icon">
+                      <path d="M7 3v3" />
+                      <path d="M17 3v3" />
+                      <rect x="3" y="6" width="18" height="14" rx="2" />
+                      <path d="M3 10h18" />
+                    </Icon>
+                    Due date
+                  </span>
+                ),
+                align: 'center',
+                width: '1fr',
+              },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon className="col-icon">
+                      <path d="M6 18v-5" />
+                      <path d="M12 18v-9" />
+                      <path d="M18 18v-3" />
+                    </Icon>
+                    Status
+                  </span>
+                ),
+                align: 'center',
+                width: '1fr',
+              },
               { title: '', align: 'right', width: '0.9fr' },
             ]}
             rows={activeRows.map((lesson) => {
@@ -744,7 +862,15 @@ function MyLessons({ role }) {
               return {
                 key: lesson.id,
                 cells: [
-                  <div className="cell-strong">{lesson.title}</div>,
+                  <div className="cell-strong lesson-title">
+                    <span className="lesson-title-icon">
+                      <Icon>
+                        <path d="M4 5h8a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4z" />
+                        <path d="M20 5h-5a3 3 0 0 0-3 3v11a2 2 0 0 1 2-2h6z" />
+                      </Icon>
+                    </span>
+                    <span>{lesson.title}</span>
+                  </div>,
                   formatDate(lesson.dueDate),
                   <div className={`status-pill center ${status.toLowerCase()}`}>{status}</div>,
                   <div className="table-actions actions-cell">
@@ -756,6 +882,11 @@ function MyLessons({ role }) {
                         openAttempt(lesson, hasDraft ? lesson.activeAttempt.attemptId : null, false)
                       }
                     >
+                      <span className="btn-icon" aria-hidden="true">
+                        <Icon>
+                          <path d="M5 4l14 8-14 8z" />
+                        </Icon>
+                      </span>
                       {hasDraft ? 'Continue' : 'Start'}
                     </button>
                   </div>,
@@ -768,7 +899,15 @@ function MyLessons({ role }) {
         <div className="data-card">
           <div className="data-header">
             <div>
-              <h3>Completed</h3>
+              <h3 className="section-title">
+                <span className="section-icon">
+                  <Icon>
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+                  </Icon>
+                </span>
+                Completed
+              </h3>
               <p className="section-subtitle">
                 {loading
                   ? 'Loading lessons…'
@@ -780,10 +919,48 @@ function MyLessons({ role }) {
           <DataGrid
             loading={loading}
             emptyMessage="No completed lessons yet."
+            className="lessons-grid"
             columns={[
-              { title: 'Name', width: '1.6fr' },
-              { title: 'Score', align: 'center', width: '1fr' },
-              { title: 'Review', align: 'center', width: '1fr' },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon className="col-icon">
+                      <path d="M3 4h7a4 4 0 0 1 4 4v12a2 2 0 0 0-2-2H3z" />
+                      <path d="M21 4h-7a4 4 0 0 0-4 4v12a2 2 0 0 1 2-2h9z" />
+                    </Icon>
+                    Name
+                  </span>
+                ),
+                width: '1.6fr',
+              },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon className="col-icon">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M6 22h12" />
+                      <path d="M8 18h8" />
+                    </Icon>
+                    Score
+                  </span>
+                ),
+                align: 'center',
+                width: '1fr',
+              },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon className="col-icon">
+                      <path d="M4 6h16" />
+                      <path d="M4 12h10" />
+                      <path d="M4 18h8" />
+                    </Icon>
+                    Review
+                  </span>
+                ),
+                align: 'center',
+                width: '1fr',
+              },
               { title: '', align: 'right', width: '0.9fr' },
             ]}
             rows={completedRows.map((lesson) => {
@@ -803,7 +980,15 @@ function MyLessons({ role }) {
               return {
                 key: lesson.id,
                 cells: [
-                  <div className="cell-strong">{lesson.title}</div>,
+                  <div className="cell-strong lesson-title">
+                    <span className="lesson-title-icon">
+                      <Icon>
+                        <path d="M4 5h8a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4z" />
+                        <path d="M20 5h-5a3 3 0 0 0-3 3v11a2 2 0 0 1 2-2h6z" />
+                      </Icon>
+                    </span>
+                    <span>{lesson.title}</span>
+                  </div>,
                   <div className="score-stack center">
                     <div>
                       <strong>Score:</strong> {primaryScore}
@@ -828,6 +1013,14 @@ function MyLessons({ role }) {
                       disabled={loadingAttempt || !retryAllowed}
                       onClick={() => openAttempt(lesson)}
                     >
+                      <span className="btn-icon" aria-hidden="true">
+                        <Icon>
+                          <path d="M4 4v6h6" />
+                          <path d="M20 20v-6h-6" />
+                          <path d="M20 8a8 8 0 0 0-14-4" />
+                          <path d="M4 16a8 8 0 0 0 14 4" />
+                        </Icon>
+                      </span>
                       {retryAllowed ? 'Retry lesson' : 'Retry used'}
                     </button>
                     <button
@@ -836,6 +1029,13 @@ function MyLessons({ role }) {
                       disabled={loadingAttempt || !latestAttempt}
                       onClick={() => openAttempt(lesson, latestAttempt?.attemptId, true)}
                     >
+                      <span className="btn-icon" aria-hidden="true">
+                        <Icon>
+                          <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h6" />
+                          <path d="M18 8h6" />
+                          <path d="M21 5v6" />
+                        </Icon>
+                      </span>
                       View feedback
                     </button>
                   </div>,

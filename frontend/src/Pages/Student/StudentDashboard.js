@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChartLine, FaLayerGroup, FaListOl, FaBolt } from 'react-icons/fa';
 import PageLayout from '../../Components/PageLayout';
+import Hero from '../../Components/Hero';
 import './StudentDashboard.css';
 
 const API_BASE = 'http://localhost:5144/api/student/lessons';
@@ -188,14 +189,13 @@ function StudentDashboard({ role }) {
 
   return (
     <PageLayout title={null} role={role}>
-      <div className="dashboard-header student">
-        <div>
-          <p className="eyebrow">{todayLabel}</p>
-          <h1 className="page-title">Welcome back, {studentName}</h1>
-          <p className="section-subtitle">Stay on top of assignments and track your growth.</p>
-        </div>
-        {className ? <div className="class-chip">{className}</div> : null}
-      </div>
+      <Hero
+        variant="student"
+        eyebrow={todayLabel}
+        title={`Welcome back, ${studentName}`}
+        subtitle="Stay on top of assignments and track your growth."
+        action={className ? <div className="class-chip">{className}</div> : null}
+      />
 
       <div className="section-header">
         <h2>Your progress at a glance</h2>

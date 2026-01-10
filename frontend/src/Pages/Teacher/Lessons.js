@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
 import DataGrid from '../../Components/DataGrid';
+import Hero from '../../Components/Hero';
 import './Lessons.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher';
@@ -26,6 +27,21 @@ const createInitialForm = () => ({
   speakingPrompt: '',
 });
 
+const Icon = ({ children, className = '' }) => (
+  <svg
+    className={`icon ${className}`.trim()}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+);
+
 function Lessons({ role }) {
   const [searchParams] = useSearchParams();
   const token = useMemo(() => sessionStorage.getItem('token') || localStorage.getItem('token'), []);
@@ -37,6 +53,12 @@ function Lessons({ role }) {
     const d = new Date(raw);
     if (Number.isNaN(d.getTime())) return '';
     return d.toISOString().slice(0, 10);
+  };
+  const formatDate = (raw) => {
+    if (!raw) return 'No due date';
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return 'No due date';
+    return d.toLocaleDateString();
   };
 
   const [classes, setClasses] = useState([]);
@@ -495,6 +517,27 @@ function Lessons({ role }) {
   const totalPages = Math.max(1, Math.ceil(filteredLessons.length / PAGE_SIZE));
   const startIdx = (page - 1) * PAGE_SIZE;
   const currentPageLessons = filteredLessons.slice(startIdx, startIdx + PAGE_SIZE);
+  const lessonCounts = useMemo(() => {
+    const counts = { total: lessons.length, draft: 0, published: 0, archived: 0 };
+    lessons.forEach((lesson) => {
+      const status = (lesson.status || lesson.Status || '').toLowerCase();
+      if (status === 'draft') counts.draft += 1;
+      if (status === 'published') counts.published += 1;
+      if (status === 'archived') counts.archived += 1;
+    });
+    return counts;
+  }, [lessons]);
+  const nextDueLabel = useMemo(() => {
+    const dueDates = lessons
+      .map((lesson) => lesson.dueDate || lesson.DueDate)
+      .filter(Boolean)
+      .map((raw) => new Date(raw))
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .sort((a, b) => a - b);
+
+    if (!dueDates.length) return 'No upcoming due date';
+    return formatDate(dueDates[0]);
+  }, [lessons]);
 
   const toggleSort = (key) => {
     if (sortKey === key) {
@@ -508,18 +551,60 @@ function Lessons({ role }) {
 
 
   return (
-    <PageLayout title="Lessons" role={role}>
+    <PageLayout title={null} role={role}>
       <div className="teacher-lessons">
-        <div className="header-row">
-          <div>
-            <p className="eyebrow">Plan ahead</p>
-            <h1 className="page-title">Lessons</h1>
-            <p className="section-subtitle">Create, assign, and track lessons across your classes.</p>
-          </div>
-          <button type="button" className="primary-btn" onClick={openCreateDialog}>
-            + Create new lesson
-          </button>
-        </div>
+        <Hero
+          eyebrow="Plan ahead"
+          title="Lessons"
+          subtitle="Create, assign, and track lessons across your classes."
+          variant="teacher"
+          icon={
+            <Icon>
+              <path d="M2 4.5h7a4 4 0 0 1 4 4v11.5a3 3 0 0 0-3-3H2z" />
+              <path d="M22 4.5h-7a4 4 0 0 0-4 4v11.5a3 3 0 0 1 3-3h8z" />
+            </Icon>
+          }
+          meta={[
+            {
+              label: `${lessonCounts.total} total`,
+              icon: (
+                <Icon className="mini-icon">
+                  <path d="M6 6h12" />
+                  <path d="M6 12h12" />
+                  <path d="M6 18h8" />
+                </Icon>
+              ),
+            },
+            {
+              label: `${lessonCounts.published} published`,
+              tone: 'ghost',
+              icon: (
+                <Icon className="mini-icon">
+                  <path d="M4 6h16" />
+                  <path d="M4 12h10" />
+                  <path d="M4 18h8" />
+                </Icon>
+              ),
+            },
+            {
+              label: `Next due: ${nextDueLabel}`,
+              tone: 'subtle',
+              icon: (
+                <Icon className="mini-icon">
+                  <path d="M7 3v3" />
+                  <path d="M17 3v3" />
+                  <rect x="3" y="6" width="18" height="14" rx="2" />
+                  <path d="M3 10h18" />
+                </Icon>
+              ),
+            },
+          ]}
+          action={
+            <button type="button" className="dash-button primary" onClick={openCreateDialog}>
+              + Create new lesson
+            </button>
+          }
+        />
 
         {error ? <div className="notice error">{error}</div> : null}
 
@@ -544,7 +629,19 @@ function Lessons({ role }) {
         <div className="data-card">
           <div className="data-header">
             <div>
-              <h3>Lessons</h3>
+              <h3 className="section-title">
+                <span className="section-icon">
+                  <Icon>
+                    <rect x="4" y="5" width="4" height="4" rx="1" />
+                    <path d="M10 7h10" />
+                    <rect x="4" y="11" width="4" height="4" rx="1" />
+                    <path d="M10 13h10" />
+                    <rect x="4" y="17" width="4" height="4" rx="1" />
+                    <path d="M10 19h10" />
+                  </Icon>
+                </span>
+                Lessons
+              </h3>
               <p className="section-subtitle">
                 {loadingLessons
                   ? 'Loading lessons…'
@@ -586,11 +683,62 @@ function Lessons({ role }) {
             <DataGrid
               loading={loadingLessons}
               emptyMessage="No lessons found for this class."
+              className="lessons-grid"
               columns={[
-                { title: 'Name', width: '1.6fr' },
-                { title: 'Due date', align: 'center', width: '0.9fr' },
-                { title: 'Status', align: 'center', width: '0.9fr' },
-                { title: 'Actions', align: 'right', width: '0.8fr' },
+                {
+                  title: (
+                    <span className="col-title">
+                      <Icon className="col-icon">
+                        <path d="M3 4h7a4 4 0 0 1 4 4v12a2 2 0 0 0-2-2H3z" />
+                        <path d="M21 4h-7a4 4 0 0 0-4 4v12a2 2 0 0 1 2-2h9z" />
+                      </Icon>
+                      Name
+                    </span>
+                  ),
+                  width: '1.6fr',
+                },
+                {
+                  title: (
+                    <span className="col-title">
+                      <Icon className="col-icon">
+                        <path d="M7 3v3" />
+                        <path d="M17 3v3" />
+                        <rect x="3" y="6" width="18" height="14" rx="2" />
+                        <path d="M3 10h18" />
+                      </Icon>
+                      Due date
+                    </span>
+                  ),
+                  align: 'center',
+                  width: '0.9fr',
+                },
+                {
+                  title: (
+                    <span className="col-title">
+                      <Icon className="col-icon">
+                        <path d="M6 18v-5" />
+                        <path d="M12 18v-9" />
+                        <path d="M18 18v-3" />
+                      </Icon>
+                      Status
+                    </span>
+                  ),
+                  align: 'center',
+                  width: '0.9fr',
+                },
+                {
+                  title: (
+                    <span className="col-title">
+                      <Icon className="col-icon">
+                        <path d="M12 6v12" />
+                        <path d="M6 12h12" />
+                      </Icon>
+                      Actions
+                    </span>
+                  ),
+                  align: 'right',
+                  width: '0.8fr',
+                },
               ]}
               rows={currentPageLessons.map((lesson) => {
                 const id = lesson.id || lesson.Id;
@@ -599,7 +747,15 @@ function Lessons({ role }) {
                 return {
                   key: id,
                   cells: [
-                    <div className="cell-strong">{lesson.title || lesson.Title}</div>,
+                    <div className="cell-strong lesson-title">
+                      <span className="lesson-title-icon">
+                        <Icon>
+                          <path d="M4 5h8a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4z" />
+                          <path d="M20 5h-5a3 3 0 0 0-3 3v11a2 2 0 0 1 2-2h6z" />
+                        </Icon>
+                      </span>
+                      <span>{lesson.title || lesson.Title}</span>
+                    </div>,
                     due ? new Date(due).toLocaleDateString() : 'No due date',
                     <div className={`status-pill center ${status?.toLowerCase()}`}>{status}</div>,
                     <div className="table-actions">
