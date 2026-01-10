@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import torch
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import re
 import difflib
 import os
@@ -12,15 +12,16 @@ import os
 # =========================
 
 class Config:
-    # Model path is external to the repository
-    MODEL_PATH = os.environ.get(
-        "FCE_MODEL_PATH",
-        "/Users/dilwar/Desktop/trained_model"
+    MODEL_REF = os.environ.get(
+        "FCE_MODEL_REF",
+        "dilwarahmed/fce-grammar-corrector"
     )
+
+    HF_TOKEN = os.environ.get("HF_TOKEN", None)
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     MAX_ENCODER_LEN = 512
-    MAX_NEW_TOKENS = 256
+    DEFAULT_MAX_NEW_TOKENS = 256
 
     INSTRUCTION_PREFIX = (
         "fix_grammar Keep meaning. Improve grammar, spelling, and punctuation. "
@@ -36,7 +37,7 @@ config = Config()
 class CorrectionRequest(BaseModel):
     student_input: str
     prompt: str = ""
-    max_length: int = 256
+    max_length: int = config.DEFAULT_MAX_NEW_TOKENS
 
 
 class CorrectionResponse(BaseModel):
@@ -54,7 +55,7 @@ class CorrectionResponse(BaseModel):
 
 app = FastAPI(
     title="FCE Error Correction API",
-    description="API for grammatical error correction using a trained T5 model",
+    description="API for grammatical error correction using a trained seq2seq model",
     version="1.0.0"
 )
 
@@ -76,24 +77,25 @@ class ModelManager:
         self.tokenizer = None
         self.device = config.DEVICE
         self.loaded = False
+        self.model_ref = config.MODEL_REF
 
     def load_model(self):
-        model_path = config.MODEL_PATH
+        """
+        Loads from Hugging Face Hub OR local path.
+        - If config.MODEL_REF exists on disk -> load locally
+        - Else -> treat it as a HF Hub repo id
+        """
+        model_ref = self.model_ref
 
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model not found at {model_path}")
+        is_local = os.path.exists(model_ref)
 
-        if not os.path.exists(os.path.join(model_path, "config.json")):
-            raise FileNotFoundError("Missing config.json in model directory")
+        load_kwargs = {}
+        if not is_local and config.HF_TOKEN:
+            load_kwargs["token"] = config.HF_TOKEN
 
-        if not (
-            os.path.exists(os.path.join(model_path, "pytorch_model.bin")) or
-            os.path.exists(os.path.join(model_path, "model.safetensors"))
-        ):
-            raise FileNotFoundError("Model weights not found")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_ref, **load_kwargs)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_ref, **load_kwargs)
 
-        self.tokenizer = T5Tokenizer.from_pretrained(model_path)
-        self.model = T5ForConditionalGeneration.from_pretrained(model_path)
         self.model.to(self.device)
         self.model.eval()
         self.loaded = True
@@ -140,27 +142,28 @@ def identify_changes(original: str, corrected: str):
     return changes[:50]
 
 
-def correct_text(student_input: str, prompt: str = "", max_length: int = 256):
+def correct_text(student_input: str, prompt: str = "", max_length: int = config.DEFAULT_MAX_NEW_TOKENS):
     if not model_manager.loaded:
         raise RuntimeError("Model not loaded")
 
     input_text = f"{config.INSTRUCTION_PREFIX} {student_input}"
 
-    input_ids = model_manager.tokenizer.encode(
+    batch = model_manager.tokenizer(
         input_text,
         return_tensors="pt",
         max_length=config.MAX_ENCODER_LEN,
         truncation=True
-    ).to(model_manager.device)
+    )
+    batch = {k: v.to(model_manager.device) for k, v in batch.items()}
 
     with torch.no_grad():
         outputs = model_manager.model.generate(
-            input_ids,
-            max_length=max_length,
+            **batch,
+            max_new_tokens=max_length,
             num_beams=6,
             no_repeat_ngram_size=3,
             repetition_penalty=1.1,
-            early_stopping=True
+            early_stopping=True,
         )
 
     corrected = model_manager.tokenizer.decode(
@@ -191,7 +194,8 @@ async def root():
     return {
         "message": "FCE Error Correction API",
         "model_loaded": model_manager.loaded,
-        "device": model_manager.device
+        "device": model_manager.device,
+        "model_ref": model_manager.model_ref,
     }
 
 

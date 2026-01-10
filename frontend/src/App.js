@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Register from './Pages/Auth/Register';
 import Login from './Pages/Auth/Login';
 import EditProfile from './Pages/Auth/EditProfile';
+import ScrollToTop from './Components/ScrollToTop';
 
 import StudentDashboard from './Pages/Student/StudentDashboard';
 import MyLessons from './Pages/Student/MyLessons';
@@ -49,6 +50,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Auth routes */}
         <Route path="/login" element={<Login setRole={setRole} />} />

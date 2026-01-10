@@ -4,12 +4,6 @@
   gap: 18px;
 }
 
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
 
 .notice {
   padding: 12px 14px;
@@ -26,9 +20,9 @@
 }
 
 .data-card {
-  background: var(--bg-surface);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), var(--bg-surface));
   border: 1px solid var(--border-soft);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 18px;
   box-shadow: var(--shadow-soft);
 }
@@ -39,6 +33,23 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
+}
+
+.section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.section-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primary-strong);
 }
 
 .table {
@@ -66,6 +77,30 @@
   background: rgba(59, 130, 246, 0.03);
 }
 
+.lessons-grid .data-grid-head {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.12), var(--bg-muted));
+}
+
+.lessons-grid .data-grid-row {
+  transition: background 0.15s ease;
+}
+
+.lessons-grid .data-grid-row:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.col-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.col-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-strong);
+}
+
 .table-row.muted {
   color: var(--text-secondary);
 }
@@ -86,6 +121,27 @@
   color: var(--text-primary);
 }
 
+.lesson-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lesson-title-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primary-strong);
+  flex: 0 0 auto;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
 
 .actions-cell {
   justify-self: end;
@@ -95,11 +151,20 @@
 }
 
 .table-actions {
-
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.btn-icon {
+  display: inline-flex;
+  margin-right: 6px;
+}
+
+.btn-icon .icon {
+  width: 16px;
+  height: 16px;
 }
 
 .gap-small {
@@ -120,16 +185,19 @@
 .status-pill.active {
   color: #15803d;
   border-color: #bbf7d0;
+  background: #f0fdf4;
 }
 
 .status-pill.late {
   color: #b91c1c;
   border-color: #fecdd3;
+  background: #fff1f2;
 }
 
 .status-pill.completed {
   color: #1d4ed8;
   border-color: #bfdbfe;
+  background: #eff6ff;
 }
 
 .status-pill.pending {

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaPlus, FaChartLine, FaBookOpen, FaUsers, FaCheckCircle } from 'react-icons/fa';
 import PageLayout from '../../Components/PageLayout';
+import Hero from '../../Components/Hero';
 import './TeacherDashboard.css';
 
 const StatCard = ({ icon, label, value, description }) => (
@@ -149,13 +150,12 @@ function TeacherDashboard({ role }) {
 
   return (
     <PageLayout title={null} role={role}>
-      <div className="dashboard-header">
-        <div>
-          <p className="eyebrow">{todayLabel}</p>
-          <h1 className="page-title">Welcome back, {teacherName}</h1>
-          <p className="section-subtitle">Track class progress, publish lessons, and review student work.</p>
-        </div>
-        <div className="header-actions">
+      <Hero
+        variant="teacher"
+        eyebrow={todayLabel}
+        title={`Welcome back, ${teacherName}`}
+        subtitle="Track class progress, publish lessons, and review student work."
+        action={
           <button
             type="button"
             className="dash-button primary"
@@ -163,8 +163,8 @@ function TeacherDashboard({ role }) {
           >
             <FaPlus /> Create new lesson
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="section-header">
         <h2>Classroom at a glance</h2>
