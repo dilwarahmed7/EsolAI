@@ -76,6 +76,7 @@ function Lessons({ role }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortKey, setSortKey] = useState('name'); // name | due
   const [sortDir, setSortDir] = useState('asc');
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [activeMenu, setActiveMenu] = useState(null);
   const menuRefs = useRef({});
@@ -498,6 +499,11 @@ function Lessons({ role }) {
       if (statusFilter !== 'all' && status !== statusFilter) return false;
       return true;
     })
+    .filter((lesson) => {
+      if (!searchQuery.trim()) return true;
+      const name = (lesson.title || lesson.Title || '').toLowerCase();
+      return name.includes(searchQuery.trim().toLowerCase());
+    })
     .sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       if (sortKey === 'name') {
@@ -649,6 +655,16 @@ function Lessons({ role }) {
               </p>
             </div>
             <div className="filter-row">
+              <input
+                type="text"
+                className="status-select filter-input"
+                placeholder="Search by lesson name"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
+              />
               <button
                 type="button"
                 className={`ghost-btn small ${sortKey === 'name' ? 'active' : ''}`}
@@ -746,6 +762,7 @@ function Lessons({ role }) {
                 const status = lesson.status || lesson.Status;
                 return {
                   key: id,
+                  onDoubleClick: () => openEditDialog(id),
                   cells: [
                     <div className="cell-strong lesson-title">
                       <span className="lesson-title-icon">

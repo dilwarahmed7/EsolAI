@@ -38,6 +38,7 @@ function TeacherDashboard({ role }) {
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingLessons, setLoadingLessons] = useState(true);
   const [summary, setSummary] = useState({ activeStudents: '--', lessonsInProgress: '--', averageScorePercent: '--' });
+  const [averageTrend, setAverageTrend] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
 
   const stats = [
@@ -49,11 +50,20 @@ function TeacherDashboard({ role }) {
     },
     {
       label: 'Average score',
-      value: loadingSummary
-        ? '…'
-        : typeof summary.averageScorePercent === 'number'
-        ? `${summary.averageScorePercent}%`
-        : summary.averageScorePercent,
+      value: loadingSummary ? (
+        '…'
+      ) : typeof summary.averageScorePercent === 'number' ? (
+        <>
+          {summary.averageScorePercent}%
+          {averageTrend ? (
+            <span className={`stat-trend ${averageTrend}`}>
+              {averageTrend === 'up' ? '▲' : averageTrend === 'down' ? '▼' : '•'}
+            </span>
+          ) : null}
+        </>
+      ) : (
+        summary.averageScorePercent
+      ),
       description: 'First attempts only',
       icon: <FaChartLine />,
     },
@@ -148,6 +158,27 @@ function TeacherDashboard({ role }) {
     loadSummary();
   }, []);
 
+  useEffect(() => {
+    if (typeof summary.averageScorePercent !== 'number') {
+      setAverageTrend(null);
+      return;
+    }
+    const prevRaw = sessionStorage.getItem('teacherAvgScorePrev');
+    const prev = prevRaw != null ? Number(prevRaw) : null;
+    if (Number.isFinite(prev)) {
+      if (summary.averageScorePercent > prev) {
+        setAverageTrend('up');
+      } else if (summary.averageScorePercent < prev) {
+        setAverageTrend('down');
+      } else {
+        setAverageTrend('flat');
+      }
+    } else {
+      setAverageTrend(null);
+    }
+    sessionStorage.setItem('teacherAvgScorePrev', String(summary.averageScorePercent));
+  }, [summary.averageScorePercent]);
+
   return (
     <PageLayout title={null} role={role}>
       <Hero
@@ -155,6 +186,23 @@ function TeacherDashboard({ role }) {
         eyebrow={todayLabel}
         title={`Welcome back, ${teacherName}`}
         subtitle="Track class progress, publish lessons, and review student work."
+        icon={
+          <svg
+            className="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="8" height="8" rx="2" />
+            <rect x="13" y="3" width="8" height="5" rx="2" />
+            <rect x="13" y="10" width="8" height="11" rx="2" />
+            <rect x="3" y="13" width="8" height="8" rx="2" />
+          </svg>
+        }
         action={
           <button
             type="button"

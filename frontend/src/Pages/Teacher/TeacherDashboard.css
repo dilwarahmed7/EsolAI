@@ -256,6 +256,27 @@
   font-size: 1.6rem;
   font-weight: 800;
   color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-trend {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-trend.up {
+  color: #16a34a;
+}
+
+.stat-trend.down {
+  color: #dc2626;
+}
+
+.stat-trend.flat {
+  color: var(--text-secondary);
 }
 
 .stat-description {

@@ -6,6 +6,7 @@ import './MyLessons.css';
 
 const API_BASE = 'http://localhost:5144/api/student/lessons';
 const FALLBACK_OUT_OF = 22;
+const PAGE_SIZE = 10;
 
 const formatDate = (raw) => {
   if (!raw) return 'No due date';
@@ -245,6 +246,17 @@ function MyLessons({ role }) {
   const [savingProgress, setSavingProgress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [attemptMessage, setAttemptMessage] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [completedFilter, setCompletedFilter] = useState('all');
+  const [activeNameFilter, setActiveNameFilter] = useState('');
+  const [completedNameFilter, setCompletedNameFilter] = useState('');
+  const [activeSortKey, setActiveSortKey] = useState('due');
+  const [activeSortDir, setActiveSortDir] = useState('asc');
+  const [completedSortKey, setCompletedSortKey] = useState('name');
+  const [completedSortDir, setCompletedSortDir] = useState('asc');
+  const [completedScoreFilter, setCompletedScoreFilter] = useState('all');
+  const [activePage, setActivePage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
 
   const [micError, setMicError] = useState('');
   const [listening, setListening] = useState(false);
@@ -347,6 +359,79 @@ function MyLessons({ role }) {
 
   const activeRows = rows.filter((r) => r.computedStatus !== 'Completed');
   const completedRows = rows.filter((r) => r.computedStatus === 'Completed');
+  const filteredActiveRows = activeRows.filter((lesson) => {
+    if (activeFilter === 'all') return true;
+    return lesson.computedStatus.toLowerCase() === activeFilter;
+  }).filter((lesson) => {
+    if (!activeNameFilter.trim()) return true;
+    const name = (lesson.title || '').toLowerCase();
+    return name.includes(activeNameFilter.trim().toLowerCase());
+  });
+  const filteredCompletedRows = completedRows.filter((lesson) => {
+    if (completedFilter === 'all') return true;
+    const reviewStatus = lesson.latestAttempt?.reviewStatus?.toLowerCase();
+    return (reviewStatus || 'pending') === completedFilter;
+  }).filter((lesson) => {
+    if (!completedNameFilter.trim()) return true;
+    const name = (lesson.title || '').toLowerCase();
+    return name.includes(completedNameFilter.trim().toLowerCase());
+  }).filter((lesson) => {
+    if (completedScoreFilter === 'all') return true;
+    const attempt = lesson.originalAttempt || lesson.latestAttempt;
+    const total = attempt?.totalScore;
+    if (completedScoreFilter === 'unscored') return typeof total !== 'number';
+    if (typeof total !== 'number') return false;
+    const outOf = lesson.scoreOutOf || FALLBACK_OUT_OF;
+    const percent = outOf > 0 ? (total / outOf) * 100 : 0;
+    if (completedScoreFilter === 'high') return percent >= 70;
+    if (completedScoreFilter === 'low') return percent < 70;
+    return true;
+  });
+
+  const sortLessons = (list, key, dir) => {
+    const dirValue = dir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      if (key === 'name') {
+        return (a.title || '').localeCompare(b.title || '') * dirValue;
+      }
+      if (key === 'due') {
+        const aTime = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const bTime = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        if (aTime === bTime) return 0;
+        return aTime > bTime ? dirValue : -dirValue;
+      }
+      return 0;
+    });
+  };
+
+  const sortedActiveRows = sortLessons(filteredActiveRows, activeSortKey, activeSortDir);
+  const sortedCompletedRows = sortLessons(filteredCompletedRows, completedSortKey, completedSortDir);
+  const activeTotalPages = Math.max(1, Math.ceil(sortedActiveRows.length / PAGE_SIZE));
+  const completedTotalPages = Math.max(1, Math.ceil(sortedCompletedRows.length / PAGE_SIZE));
+  const activeStartIdx = (activePage - 1) * PAGE_SIZE;
+  const completedStartIdx = (completedPage - 1) * PAGE_SIZE;
+  const pagedActiveRows = sortedActiveRows.slice(activeStartIdx, activeStartIdx + PAGE_SIZE);
+  const pagedCompletedRows = sortedCompletedRows.slice(completedStartIdx, completedStartIdx + PAGE_SIZE);
+
+  const toggleActiveSort = (key) => {
+    if (activeSortKey === key) {
+      setActiveSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setActiveSortKey(key);
+      setActiveSortDir('asc');
+    }
+    setActivePage(1);
+  };
+
+  const toggleCompletedSort = (key) => {
+    if (completedSortKey === key) {
+      setCompletedSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setCompletedSortKey(key);
+      setCompletedSortDir('asc');
+    }
+    setCompletedPage(1);
+  };
   const nextDueLabel = useMemo(() => {
     const dueDates = activeRows
       .map((lesson) => lesson.dueDate)
@@ -803,8 +888,46 @@ function MyLessons({ role }) {
               <p className="section-subtitle">
                 {loading
                   ? 'Loading lessons…'
-                  : `${activeRows.length} lesson${activeRows.length === 1 ? '' : 's'}`}
+                  : `${filteredActiveRows.length} of ${activeRows.length} lesson${activeRows.length === 1 ? '' : 's'}`}
               </p>
+            </div>
+            <div className="filter-row">
+              <input
+                type="text"
+                className="filter-input"
+                placeholder="Search in To Do"
+                value={activeNameFilter}
+                onChange={(e) => {
+                  setActiveNameFilter(e.target.value);
+                  setActivePage(1);
+                }}
+              />
+              <button
+                type="button"
+                className={`ghost-btn small ${activeSortKey === 'name' ? 'active' : ''}`}
+                onClick={() => toggleActiveSort('name')}
+              >
+                Name {activeSortKey === 'name' ? (activeSortDir === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <button
+                type="button"
+                className={`ghost-btn small ${activeSortKey === 'due' ? 'active' : ''}`}
+                onClick={() => toggleActiveSort('due')}
+              >
+                Due date {activeSortKey === 'due' ? (activeSortDir === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <select
+                className="status-select"
+                value={activeFilter}
+                onChange={(e) => {
+                  setActiveFilter(e.target.value);
+                  setActivePage(1);
+                }}
+              >
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="late">Late</option>
+              </select>
             </div>
           </div>
 
@@ -856,11 +979,13 @@ function MyLessons({ role }) {
               },
               { title: '', align: 'right', width: '0.9fr' },
             ]}
-            rows={activeRows.map((lesson) => {
+            rows={pagedActiveRows.map((lesson) => {
               const status = lesson.computedStatus;
               const hasDraft = !!lesson.activeAttempt;
               return {
                 key: lesson.id,
+                onDoubleClick: () =>
+                  openAttempt(lesson, hasDraft ? lesson.activeAttempt.attemptId : null, false),
                 cells: [
                   <div className="cell-strong lesson-title">
                     <span className="lesson-title-icon">
@@ -894,6 +1019,29 @@ function MyLessons({ role }) {
               };
             })}
           />
+          {activeTotalPages > 1 ? (
+            <div className="pagination">
+              <button
+                type="button"
+                className="ghost-btn small"
+                onClick={() => setActivePage((prev) => Math.max(1, prev - 1))}
+                disabled={activePage === 1}
+              >
+                Previous
+              </button>
+              <span className="page-indicator">
+                Page {activePage} of {activeTotalPages}
+              </span>
+              <button
+                type="button"
+                className="ghost-btn small"
+                onClick={() => setActivePage((prev) => Math.min(activeTotalPages, prev + 1))}
+                disabled={activePage === activeTotalPages}
+              >
+                Next
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <div className="data-card">
@@ -911,8 +1059,52 @@ function MyLessons({ role }) {
               <p className="section-subtitle">
                 {loading
                   ? 'Loading lessons…'
-                  : `${completedRows.length} lesson${completedRows.length === 1 ? '' : 's'}`}
+                  : `${filteredCompletedRows.length} of ${completedRows.length} lesson${completedRows.length === 1 ? '' : 's'}`}
               </p>
+            </div>
+            <div className="filter-row">
+              <input
+                type="text"
+                className="filter-input"
+                placeholder="Search in Completed"
+                value={completedNameFilter}
+                onChange={(e) => {
+                  setCompletedNameFilter(e.target.value);
+                  setCompletedPage(1);
+                }}
+              />
+              <button
+                type="button"
+                className={`ghost-btn small ${completedSortKey === 'name' ? 'active' : ''}`}
+                onClick={() => toggleCompletedSort('name')}
+              >
+                Name {completedSortKey === 'name' ? (completedSortDir === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <select
+                className="status-select"
+                value={completedFilter}
+                onChange={(e) => {
+                  setCompletedFilter(e.target.value);
+                  setCompletedPage(1);
+                }}
+              >
+                <option value="all">All reviews</option>
+                <option value="pending">Pending</option>
+                <option value="reviewed">Reviewed</option>
+              </select>
+              <select
+                className="status-select"
+                value={completedScoreFilter}
+                onChange={(e) => {
+                  setCompletedScoreFilter(e.target.value);
+                  setCompletedPage(1);
+                }}
+              >
+                <option value="all">All scores</option>
+                <option value="high">70% and up</option>
+                <option value="low">Below 70%</option>
+                <option value="unscored">Unscored</option>
+              </select>
             </div>
           </div>
 
@@ -963,22 +1155,34 @@ function MyLessons({ role }) {
               },
               { title: '', align: 'right', width: '0.9fr' },
             ]}
-            rows={completedRows.map((lesson) => {
+            rows={pagedCompletedRows.map((lesson) => {
               const latestAttempt = lesson.latestAttempt;
               const primaryAttempt = lesson.originalAttempt || latestAttempt;
               const retryAttempt = lesson.retryAttempt;
               const retryAllowed = lesson.retryAllowed ?? false;
-              const primaryScore =
-                primaryAttempt && typeof primaryAttempt.totalScore === 'number'
-                  ? `${primaryAttempt.totalScore}/${lesson.scoreOutOf || FALLBACK_OUT_OF}`
-                  : '—';
-              const retryScore =
-                retryAttempt && typeof retryAttempt.totalScore === 'number'
-                  ? `${retryAttempt.totalScore}/${lesson.scoreOutOf || FALLBACK_OUT_OF}`
+              const scoreOutOf = lesson.scoreOutOf || FALLBACK_OUT_OF;
+              const primaryPercent =
+                primaryAttempt && typeof primaryAttempt.totalScore === 'number' && scoreOutOf > 0
+                  ? Math.round((primaryAttempt.totalScore / scoreOutOf) * 100)
                   : null;
+              const retryPercent =
+                retryAttempt && typeof retryAttempt.totalScore === 'number' && scoreOutOf > 0
+                  ? Math.round((retryAttempt.totalScore / scoreOutOf) * 100)
+                  : null;
+              const percentTone =
+                primaryPercent == null
+                  ? 'neutral'
+                  : primaryPercent >= 70
+                  ? 'good'
+                  : primaryPercent >= 50
+                  ? 'mid'
+                  : 'low';
 
               return {
                 key: lesson.id,
+                onDoubleClick: latestAttempt
+                  ? () => openAttempt(lesson, latestAttempt?.attemptId, true)
+                  : undefined,
                 cells: [
                   <div className="cell-strong lesson-title">
                     <span className="lesson-title-icon">
@@ -990,11 +1194,11 @@ function MyLessons({ role }) {
                     <span>{lesson.title}</span>
                   </div>,
                   <div className="score-stack center">
-                    <div>
-                      <strong>Score:</strong> {primaryScore}
-                    </div>
-                    {retryScore !== null ? (
-                      <div className="muted small-text">Retry (practice): {retryScore}</div>
+                    <span className={`score-pill ${percentTone}`}>
+                      {primaryPercent != null ? `${primaryPercent}%` : '—'}
+                    </span>
+                    {retryPercent !== null ? (
+                      <div className="muted small-text">Retry: {retryPercent}%</div>
                     ) : null}
                   </div>,
                   <div className="center">
@@ -1043,6 +1247,29 @@ function MyLessons({ role }) {
               };
             })}
           />
+          {completedTotalPages > 1 ? (
+            <div className="pagination">
+              <button
+                type="button"
+                className="ghost-btn small"
+                onClick={() => setCompletedPage((prev) => Math.max(1, prev - 1))}
+                disabled={completedPage === 1}
+              >
+                Previous
+              </button>
+              <span className="page-indicator">
+                Page {completedPage} of {completedTotalPages}
+              </span>
+              <button
+                type="button"
+                className="ghost-btn small"
+                onClick={() => setCompletedPage((prev) => Math.min(completedTotalPages, prev + 1))}
+                disabled={completedPage === completedTotalPages}
+              >
+                Next
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 

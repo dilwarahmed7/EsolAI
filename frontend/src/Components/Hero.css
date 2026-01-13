@@ -116,6 +116,11 @@
   transform: translateY(-1px);
 }
 
+.hero .icon {
+  width: 20px;
+  height: 20px;
+}
+
 .hero .mini-icon {
   width: 16px;
   height: 16px;

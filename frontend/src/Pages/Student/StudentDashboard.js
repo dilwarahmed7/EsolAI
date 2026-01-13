@@ -147,7 +147,7 @@ function StudentDashboard({ role }) {
     .map((l) => {
       const primary = l.originalAttempt || l.latestAttempt;
       return primary && typeof primary.totalScore === 'number'
-        ? { total: primary.totalScore, outOf: l.scoreOutOf || 22 }
+        ? { total: primary.totalScore, outOf: l.scoreOutOf || 22, submittedAt: primary.submittedAt }
         : null;
     })
     .filter(Boolean);
@@ -161,15 +161,46 @@ function StudentDashboard({ role }) {
         ) / 10
       : null;
 
+  const averageTrend = useMemo(() => {
+    if (firstAttemptScores.length < 2 || derivedAverage == null) return null;
+    const scoredWithDates = firstAttemptScores
+      .map((s) => ({
+        ...s,
+        time: s.submittedAt ? new Date(s.submittedAt).getTime() : NaN,
+      }))
+      .filter((s) => Number.isFinite(s.time))
+      .sort((a, b) => b.time - a.time);
+
+    if (scoredWithDates.length < 2) return null;
+    const [, ...rest] = scoredWithDates;
+    if (rest.length === 0) return null;
+    const prevAverage =
+      Math.round(
+        (rest.reduce((sum, s) => sum + (s.total / s.outOf) * 100, 0) / rest.length) * 10
+      ) / 10;
+    if (derivedAverage > prevAverage) return 'up';
+    if (derivedAverage < prevAverage) return 'down';
+    return 'flat';
+  }, [derivedAverage, firstAttemptScores]);
+
   const stats = [
     {
       label: 'Average score',
       value:
-        derivedAverage != null
-          ? `${derivedAverage}%`
-          : typeof averageScore === 'number'
-          ? `${averageScore}%`
-          : averageScore,
+        derivedAverage != null ? (
+          <>
+            {derivedAverage}%
+            {averageTrend ? (
+              <span className={`stat-trend ${averageTrend}`}>
+                {averageTrend === 'up' ? '▲' : averageTrend === 'down' ? '▼' : '•'}
+              </span>
+            ) : null}
+          </>
+        ) : typeof averageScore === 'number' ? (
+          `${averageScore}%`
+        ) : (
+          averageScore
+        ),
       description: 'Based on first attempts',
       icon: <FaChartLine />,
     },
@@ -194,6 +225,23 @@ function StudentDashboard({ role }) {
         eyebrow={todayLabel}
         title={`Welcome back, ${studentName}`}
         subtitle="Stay on top of assignments and track your growth."
+        icon={
+          <svg
+            className="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="8" height="8" rx="2" />
+            <rect x="13" y="3" width="8" height="5" rx="2" />
+            <rect x="13" y="10" width="8" height="11" rx="2" />
+            <rect x="3" y="13" width="8" height="8" rx="2" />
+          </svg>
+        }
         action={className ? <div className="class-chip">{className}</div> : null}
       />
 

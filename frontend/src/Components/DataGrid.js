@@ -19,13 +19,14 @@ function DataGrid({
   );
 
   const renderDataRow = (row, rowIndex) => {
-    const { cells = [], key, className: rowClass } = row;
+    const { cells = [], key, className: rowClass, onDoubleClick } = row;
     const rowKey = key ?? rowIndex;
     return (
       <div
         className={`data-grid-row ${rowClass || ''}`.trim()}
         style={baseRowStyle}
         key={rowKey}
+        onDoubleClick={onDoubleClick}
       >
         {cells.map((cell, cellIndex) => {
           const col = columns[cellIndex] || {};

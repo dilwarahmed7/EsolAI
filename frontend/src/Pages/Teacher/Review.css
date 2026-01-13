@@ -4,13 +4,6 @@
   gap: 18px;
 }
 
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
 .chip-small {
   display: inline-flex;
   align-items: center;
@@ -37,10 +30,11 @@
   border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 14px;
-  background: var(--bg-muted);
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: var(--shadow-soft);
 }
 
 .question-head {
@@ -71,7 +65,7 @@
 .feedback-box {
   border: 1px solid var(--border-soft);
   border-radius: 10px;
-  background: var(--bg-muted);
+  background: #f8fafc;
   padding: 10px;
   white-space: pre-wrap;
 }
@@ -81,13 +75,20 @@
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 10px;
-  background: var(--bg-surface);
+  background: #ffffff;
   min-height: 88px;
   resize: vertical;
   font-size: 14px;
   font-family: inherit;
   color: var(--text-primary);
   box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.feedback-textarea:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .change-list {
@@ -104,7 +105,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--bg-surface);
+  background: #ffffff;
 }
 
 .change-row .pill.tiny {
@@ -142,6 +143,41 @@
   gap: 14px;
 }
 
+.data-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), var(--bg-surface));
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: var(--shadow-soft);
+}
+
+.data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--border-soft);
+}
+
+.section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.section-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primary-strong);
+}
+
 .review-meta {
   display: flex;
   justify-content: space-between;
@@ -158,4 +194,16 @@
 
 .score-input-row input[type='number'] {
   max-width: 120px;
+}
+
+.col-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.col-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-strong);
 }
