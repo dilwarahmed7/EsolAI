@@ -1,6 +1,7 @@
 import React, { Fragment, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
+import Hero from '../../Components/Hero';
 import './PracticeCommonErrors.css';
 
 const countBlanks = (text, fallback = 1) => {
@@ -16,6 +17,21 @@ const normalizeQuestions = (rawQuestions = []) =>
       answers: q?.answers || q?.Answers || [],
     }))
     .filter((q) => q.text);
+
+const Icon = ({ children, className = '' }) => (
+  <svg
+    className={`icon ${className}`.trim()}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+);
 
 function PracticeCommonErrors({ role }) {
   const location = useLocation();
@@ -98,7 +114,7 @@ function PracticeCommonErrors({ role }) {
 
   if (!sessionData || questions.length === 0) {
     return (
-      <PageLayout title="Practice common errors" role={role}>
+      <PageLayout title={null} role={role}>
         <div className="practice-common">
           <div className="empty-state">
             <p>We could not find an active practice session.</p>
@@ -116,20 +132,48 @@ function PracticeCommonErrors({ role }) {
   }
 
   return (
-    <PageLayout title="Practice common errors" role={role}>
+    <PageLayout title={null} role={role}>
       <form className="practice-common" onSubmit={handleSubmit}>
-        <div className="common-header">
-          <div>
-            <p className="eyebrow">Common error</p>
-            <h2 className="page-title">{sessionData.errorType}</h2>
-            <p className="section-subtitle">
-              Fill in the blanks for each sentence. We will score you out of {totalQuestions} once you submit.
-            </p>
-          </div>
-          <div className="pill muted">
-            {totalQuestions} {totalQuestions === 1 ? 'question' : 'questions'}
-          </div>
-        </div>
+        <Hero
+          variant="student"
+          eyebrow="Common error"
+          title={sessionData.errorType}
+          subtitle={`Fill in the blanks for each sentence. We will score you out of ${totalQuestions} once you submit.`}
+          icon={
+            <Icon>
+              <path d="M4 7h16" />
+              <path d="M4 12h10" />
+              <path d="M4 17h8" />
+            </Icon>
+          }
+          meta={[
+            {
+              label: `${totalQuestions} ${totalQuestions === 1 ? 'question' : 'questions'}`,
+              icon: (
+                <Icon className="mini-icon">
+                  <path d="M6 6h12" />
+                  <path d="M6 12h12" />
+                  <path d="M6 18h8" />
+                </Icon>
+              ),
+            },
+            {
+              label: submitted ? 'Submitted' : 'Not submitted',
+              tone: 'ghost',
+              icon: (
+                <Icon className="mini-icon">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+                </Icon>
+              ),
+            },
+          ]}
+          action={
+            <button type="button" className="ghost-button back-button" onClick={() => navigate('/practice')}>
+              ← Back to practice
+            </button>
+          }
+        />
 
         {score !== null ? (
           <div className="score-banner">

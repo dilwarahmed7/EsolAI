@@ -52,6 +52,50 @@
   color: var(--primary-strong);
 }
 
+.filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-row .ghost-btn.small.active {
+  border-color: var(--primary);
+  color: var(--primary-strong);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.filter-input {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  min-width: 200px;
+}
+
+.pagination {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.page-indicator {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.status-select {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
 .table {
   border: 1px solid var(--border-soft);
   border-radius: 12px;
@@ -87,6 +131,62 @@
 
 .lessons-grid .data-grid-row:hover {
   background: rgba(59, 130, 246, 0.08);
+}
+
+.dark-mode .data-card {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), var(--bg-surface));
+}
+
+.dark-mode .lessons-grid .data-grid-head {
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.12), var(--bg-muted));
+}
+
+.dark-mode .table-row:nth-child(even) {
+  background: rgba(96, 165, 250, 0.06);
+}
+
+.dark-mode .status-pill {
+  background: var(--bg-surface);
+}
+
+.dark-mode .status-pill.active {
+  background: rgba(22, 101, 52, 0.2);
+  border-color: rgba(22, 101, 52, 0.35);
+  color: #86efac;
+}
+
+.dark-mode .status-pill.late {
+  background: rgba(185, 28, 28, 0.2);
+  border-color: rgba(185, 28, 28, 0.35);
+  color: #fecaca;
+}
+
+.dark-mode .status-pill.completed {
+  background: rgba(29, 78, 216, 0.2);
+  border-color: rgba(29, 78, 216, 0.35);
+  color: #bfdbfe;
+}
+
+.dark-mode .score-pill {
+  background: var(--bg-muted);
+}
+
+.dark-mode .score-pill.good {
+  background: rgba(22, 101, 52, 0.2);
+  border-color: rgba(22, 101, 52, 0.35);
+  color: #86efac;
+}
+
+.dark-mode .score-pill.mid {
+  background: rgba(194, 65, 12, 0.2);
+  border-color: rgba(194, 65, 12, 0.35);
+  color: #fdba74;
+}
+
+.dark-mode .score-pill.low {
+  background: rgba(153, 27, 27, 0.2);
+  border-color: rgba(153, 27, 27, 0.35);
+  color: #fecaca;
 }
 
 .col-title {
@@ -447,6 +547,25 @@
   background: var(--bg-muted);
 }
 
+.dark-mode .modal.lesson-attempt-modal {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), var(--bg-surface));
+}
+
+.dark-mode .question-card,
+.dark-mode .reading-snippet,
+.dark-mode .feedback-block,
+.dark-mode .change-row {
+  background: var(--bg-surface);
+}
+
+.dark-mode .option-tile {
+  background: var(--bg-surface);
+}
+
+.dark-mode .text-response textarea {
+  background: var(--bg-surface);
+}
+
 .change-row .pill.tiny {
   align-self: flex-start;
   text-transform: capitalize;
@@ -499,6 +618,37 @@
 
 .score-stack .divider {
   margin: 0 6px;
+}
+
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  border: 1px solid var(--border-soft);
+  min-width: 72px;
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+.score-pill.good {
+  background: #ecfdf3;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.score-pill.mid {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.score-pill.low {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecdd3;
 }
 
 .left-actions {
