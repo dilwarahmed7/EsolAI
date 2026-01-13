@@ -1,17 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
-import {
-  FaTachometerAlt,
-  FaBook,
-  FaChartLine,
-  FaUsers,
-  FaPencilAlt,
-  FaMarker,
-  FaChevronLeft,
-  FaChevronRight,
-} from 'react-icons/fa';
 import Profile from './Profile';
+import Icon from './Icons';
 
 function Sidebar({ role = 'student' }) {
   const location = useLocation();
@@ -26,16 +17,16 @@ function Sidebar({ role = 'student' }) {
 
   const linksByRole = {
     student: [
-      { name: 'Dashboard', icon: <FaTachometerAlt />, path: '/' },
-      { name: 'My Lessons', icon: <FaBook />, path: '/my-lessons' },
-      { name: 'Practice', icon: <FaPencilAlt />, path: '/practice' },
-      { name: 'Progress', icon: <FaChartLine />, path: '/progress' },
+      { name: 'Dashboard', icon: <Icon.Dashboard />, path: '/' },
+      { name: 'My Lessons', icon: <Icon.Book />, path: '/my-lessons' },
+      { name: 'Practice', icon: <Icon.Practice />, path: '/practice' },
+      { name: 'Progress', icon: <Icon.ChartLine />, path: '/progress' },
     ],
     teacher: [
-      { name: 'Dashboard', icon: <FaTachometerAlt />, path: '/' },
-      { name: 'Lessons', icon: <FaBook />, path: '/lessons' },
-      { name: 'Students', icon: <FaUsers />, path: '/students' },
-      { name: 'Review', icon: <FaMarker />, path: '/review' },
+      { name: 'Dashboard', icon: <Icon.Dashboard />, path: '/' },
+      { name: 'Lessons', icon: <Icon.Book />, path: '/lessons' },
+      { name: 'Students', icon: <Icon.Users />, path: '/students' },
+      { name: 'Review', icon: <Icon.Review />, path: '/review' },
     ],
   };
 
@@ -43,7 +34,7 @@ function Sidebar({ role = 'student' }) {
   const initials = fullName ? fullName.trim().charAt(0).toUpperCase() : '?';
 
   const isActive = (path) =>
-    location.pathname === path || location.pathname.startsWith(`${path}/`);
+    path === '/' ? location.pathname === '/' : location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -95,12 +86,6 @@ function Sidebar({ role = 'student' }) {
         <Link to="/" className="logo-link">
           <img src="/images/EsolAI.png" alt="EsolAI Logo" className="logo" />
         </Link>
-        <Profile
-          name={fullName || error || 'Unknown User'}
-          initials={initials}
-          onEditProfile={handleEditProfile}
-          onSignOut={handleSignOut}
-        />
       </div>
 
       <div className="nav-container">
@@ -110,6 +95,7 @@ function Sidebar({ role = 'student' }) {
               to={link.path}
               key={idx}
               className={`nav-link ${isActive(link.path) ? 'active' : ''}`}
+              title={collapsed ? link.name : undefined}
             >
               <span className="icon">{link.icon}</span>
               <span className="link-text">{link.name}</span>
@@ -119,16 +105,25 @@ function Sidebar({ role = 'student' }) {
       </div>
 
       <div className="sidebar-footer">
-        <button
-          type="button"
-          className="collapse-btn"
-          onClick={toggleCollapsed}
-          aria-label="Toggle sidebar"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <FaChevronRight /> : <FaChevronLeft />}
-        </button>
+        <Profile
+          name={fullName || error || 'Unknown User'}
+          initials={initials}
+          onEditProfile={handleEditProfile}
+          onSignOut={handleSignOut}
+          variant="footer"
+        />
       </div>
+
+      <button
+        type="button"
+        className="collapse-btn collapse-mid"
+        onClick={toggleCollapsed}
+        aria-label="Toggle sidebar"
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {collapsed ? <Icon.ChevronRight /> : <Icon.ChevronLeft />}
+      </button>
+
     </div>
   );
 }

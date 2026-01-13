@@ -2,6 +2,7 @@ import React, { Fragment, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
+import Icon from '../../Components/Icons';
 import './PracticeCommonErrors.css';
 
 const countBlanks = (text, fallback = 1) => {
@@ -17,21 +18,6 @@ const normalizeQuestions = (rawQuestions = []) =>
       answers: q?.answers || q?.Answers || [],
     }))
     .filter((q) => q.text);
-
-const Icon = ({ children, className = '' }) => (
-  <svg
-    className={`icon ${className}`.trim()}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {children}
-  </svg>
-);
 
 function PracticeCommonErrors({ role }) {
   const location = useLocation();
@@ -139,33 +125,16 @@ function PracticeCommonErrors({ role }) {
           eyebrow="Common error"
           title={sessionData.errorType}
           subtitle={`Fill in the blanks for each sentence. We will score you out of ${totalQuestions} once you submit.`}
-          icon={
-            <Icon>
-              <path d="M4 7h16" />
-              <path d="M4 12h10" />
-              <path d="M4 17h8" />
-            </Icon>
-          }
+          icon={<Icon.PenNib className="icon" />}
           meta={[
             {
               label: `${totalQuestions} ${totalQuestions === 1 ? 'question' : 'questions'}`,
-              icon: (
-                <Icon className="mini-icon">
-                  <path d="M6 6h12" />
-                  <path d="M6 12h12" />
-                  <path d="M6 18h8" />
-                </Icon>
-              ),
+              icon: <Icon.List className="mini-icon" />,
             },
             {
               label: submitted ? 'Submitted' : 'Not submitted',
               tone: 'ghost',
-              icon: (
-                <Icon className="mini-icon">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M8.5 12.5l2.5 2.5 4.5-5" />
-                </Icon>
-              ),
+              icon: <Icon.CheckCircle className="mini-icon" />,
             },
           ]}
           action={

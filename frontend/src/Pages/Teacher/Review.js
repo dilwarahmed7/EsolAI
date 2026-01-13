@@ -1,25 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
+import Icon from '../../Components/Icons';
 import './Review.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher/reviews';
 const HIDE_CHANGES_MARKER = '[HIDE_AI_CHANGES]';
-
-const Icon = ({ children, className = '' }) => (
-  <svg
-    className={`icon ${className}`.trim()}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {children}
-  </svg>
-);
 
 const parseChangesFromFeedback = (aiFeedback) => {
   if (!aiFeedback || typeof aiFeedback !== 'string') return [];
@@ -173,14 +159,7 @@ function Review({ role }) {
           eyebrow="Feedback queue"
           title="Review submissions"
           subtitle="Adjust AI corrections and scores for writing and speaking responses."
-          icon={
-            <Icon>
-              <path d="M4 4h10l6 6v10a2 2 0 0 1-2 2H4z" />
-              <path d="M14 4v6h6" />
-              <path d="M8 14h8" />
-              <path d="M8 18h6" />
-            </Icon>
-          }
+          icon={<Icon.ClipboardCheck className="icon" />}
           action={
             <button type="button" className="ghost-btn" onClick={loadReviewQueue} disabled={reviewLoading}>
               Refresh
@@ -193,14 +172,7 @@ function Review({ role }) {
             <div>
               <h3 className="section-title">
                 <span className="section-icon">
-                  <Icon>
-                    <rect x="4" y="5" width="4" height="4" rx="1" />
-                    <path d="M10 7h10" />
-                    <rect x="4" y="11" width="4" height="4" rx="1" />
-                    <path d="M10 13h10" />
-                    <rect x="4" y="17" width="4" height="4" rx="1" />
-                    <path d="M10 19h10" />
-                  </Icon>
+                  <Icon.List />
                 </span>
                 Pending reviews
               </h3>

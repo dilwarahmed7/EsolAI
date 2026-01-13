@@ -2,24 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
+import Icon from '../../Components/Icons';
 import './Practice.css';
 
 const API_BASE = 'http://localhost:5144/api/practice';
-
-const Icon = ({ children, className = '' }) => (
-  <svg
-    className={`icon ${className}`.trim()}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {children}
-  </svg>
-);
 
 const ErrorCard = ({ label, description, ctaLabel, disabled, onClick, loading }) => (
   <div className="practice-card">
@@ -392,35 +378,16 @@ function Practice({ role }) {
           eyebrow="Choose your focus"
           title="Practice hub"
           subtitle="Target the most frequent mistakes for your first language, or tackle personalised feedback."
-          icon={
-            <Icon>
-              <path d="M4 20h4l10-10-4-4-10 10v4z" />
-              <path d="M14 6l4 4" />
-              <path d="M13 7l4-4" />
-            </Icon>
-          }
+          icon={<Icon.PenNib className="icon" />}
           meta={[
             {
               label: loading ? 'Loading common errors…' : `${errorTypes.length} common errors`,
-              icon: (
-                <Icon className="mini-icon">
-                  <path d="M6 6h12" />
-                  <path d="M6 12h12" />
-                  <path d="M6 18h8" />
-                </Icon>
-              ),
+              icon: <Icon.List className="mini-icon" />,
             },
             {
               label: showPersonalized ? `${personalized.length} personalised items` : 'Personalised queue ready',
               tone: 'ghost',
-              icon: (
-                <Icon className="mini-icon">
-                  <path d="M7 3v3" />
-                  <path d="M17 3v3" />
-                  <rect x="3" y="6" width="18" height="14" rx="2" />
-                  <path d="M3 10h18" />
-                </Icon>
-              ),
+              icon: <Icon.ClipboardList className="mini-icon" />,
             },
           ]}
         />
@@ -579,12 +546,7 @@ function Practice({ role }) {
                           onClick={toggleMic}
                           disabled={answering}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                            <path
-                              fill="currentColor"
-                              d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a1 1 0 0 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 0 1-2 0v-3.07A7 7 0 0 1 5 11a1 1 0 0 1 2 0 5 5 0 0 0 10 0Z"
-                            />
-                          </svg>
+                          <Icon.Microphone />
                           {listening ? 'Listening…' : 'Speak'}
                         </button>
                       ) : null}

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
 import DataGrid from '../../Components/DataGrid';
 import Hero from '../../Components/Hero';
+import Icon from '../../Components/Icons';
 import './Lessons.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher';
@@ -26,21 +27,6 @@ const createInitialForm = () => ({
   writingPrompt: '',
   speakingPrompt: '',
 });
-
-const Icon = ({ children, className = '' }) => (
-  <svg
-    className={`icon ${className}`.trim()}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {children}
-  </svg>
-);
 
 function Lessons({ role }) {
   const [searchParams] = useSearchParams();
@@ -564,45 +550,21 @@ function Lessons({ role }) {
           title="Lessons"
           subtitle="Create, assign, and track lessons across your classes."
           variant="teacher"
-          icon={
-            <Icon>
-              <path d="M2 4.5h7a4 4 0 0 1 4 4v11.5a3 3 0 0 0-3-3H2z" />
-              <path d="M22 4.5h-7a4 4 0 0 0-4 4v11.5a3 3 0 0 1 3-3h8z" />
-            </Icon>
-          }
+          icon={<Icon.BookOpen className="icon" />}
           meta={[
             {
               label: `${lessonCounts.total} total`,
-              icon: (
-                <Icon className="mini-icon">
-                  <path d="M6 6h12" />
-                  <path d="M6 12h12" />
-                  <path d="M6 18h8" />
-                </Icon>
-              ),
+              icon: <Icon.List className="mini-icon" />,
             },
             {
               label: `${lessonCounts.published} published`,
               tone: 'ghost',
-              icon: (
-                <Icon className="mini-icon">
-                  <path d="M4 6h16" />
-                  <path d="M4 12h10" />
-                  <path d="M4 18h8" />
-                </Icon>
-              ),
+              icon: <Icon.CheckCircle className="mini-icon" />,
             },
             {
               label: `Next due: ${nextDueLabel}`,
               tone: 'subtle',
-              icon: (
-                <Icon className="mini-icon">
-                  <path d="M7 3v3" />
-                  <path d="M17 3v3" />
-                  <rect x="3" y="6" width="18" height="14" rx="2" />
-                  <path d="M3 10h18" />
-                </Icon>
-              ),
+              icon: <Icon.Calendar className="mini-icon" />,
             },
           ]}
           action={
@@ -637,14 +599,7 @@ function Lessons({ role }) {
             <div>
               <h3 className="section-title">
                 <span className="section-icon">
-                  <Icon>
-                    <rect x="4" y="5" width="4" height="4" rx="1" />
-                    <path d="M10 7h10" />
-                    <rect x="4" y="11" width="4" height="4" rx="1" />
-                    <path d="M10 13h10" />
-                    <rect x="4" y="17" width="4" height="4" rx="1" />
-                    <path d="M10 19h10" />
-                  </Icon>
+                  <Icon.List className="icon" />
                 </span>
                 Lessons
               </h3>
@@ -701,60 +656,45 @@ function Lessons({ role }) {
               emptyMessage="No lessons found for this class."
               className="lessons-grid"
               columns={[
-                {
-                  title: (
-                    <span className="col-title">
-                      <Icon className="col-icon">
-                        <path d="M3 4h7a4 4 0 0 1 4 4v12a2 2 0 0 0-2-2H3z" />
-                        <path d="M21 4h-7a4 4 0 0 0-4 4v12a2 2 0 0 1 2-2h9z" />
-                      </Icon>
-                      Name
-                    </span>
-                  ),
-                  width: '1.6fr',
-                },
-                {
-                  title: (
-                    <span className="col-title">
-                      <Icon className="col-icon">
-                        <path d="M7 3v3" />
-                        <path d="M17 3v3" />
-                        <rect x="3" y="6" width="18" height="14" rx="2" />
-                        <path d="M3 10h18" />
-                      </Icon>
-                      Due date
-                    </span>
-                  ),
-                  align: 'center',
-                  width: '0.9fr',
-                },
-                {
-                  title: (
-                    <span className="col-title">
-                      <Icon className="col-icon">
-                        <path d="M6 18v-5" />
-                        <path d="M12 18v-9" />
-                        <path d="M18 18v-3" />
-                      </Icon>
-                      Status
-                    </span>
-                  ),
-                  align: 'center',
-                  width: '0.9fr',
-                },
-                {
-                  title: (
-                    <span className="col-title">
-                      <Icon className="col-icon">
-                        <path d="M12 6v12" />
-                        <path d="M6 12h12" />
-                      </Icon>
-                      Actions
-                    </span>
-                  ),
-                  align: 'right',
-                  width: '0.8fr',
-                },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon.BookOpen className="col-icon" />
+                    Name
+                  </span>
+                ),
+                width: '1.6fr',
+              },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon.Calendar className="col-icon" />
+                    Due date
+                  </span>
+                ),
+                align: 'center',
+                width: '0.9fr',
+              },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon.Signal className="col-icon" />
+                    Status
+                  </span>
+                ),
+                align: 'center',
+                width: '0.9fr',
+              },
+              {
+                title: (
+                  <span className="col-title">
+                    <Icon.Ellipsis className="col-icon" />
+                    Actions
+                  </span>
+                ),
+                align: 'right',
+                width: '0.8fr',
+              },
               ]}
               rows={currentPageLessons.map((lesson) => {
                 const id = lesson.id || lesson.Id;
@@ -766,10 +706,7 @@ function Lessons({ role }) {
                   cells: [
                     <div className="cell-strong lesson-title">
                       <span className="lesson-title-icon">
-                        <Icon>
-                          <path d="M4 5h8a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4z" />
-                          <path d="M20 5h-5a3 3 0 0 0-3 3v11a2 2 0 0 1 2-2h6z" />
-                        </Icon>
+                        <Icon.BookOpen />
                       </span>
                       <span>{lesson.title || lesson.Title}</span>
                     </div>,
