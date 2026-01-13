@@ -3,25 +3,11 @@ import { useSearchParams } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
 import DataGrid from '../../Components/DataGrid';
 import Hero from '../../Components/Hero';
+import Icon from '../../Components/Icons';
 import './Students.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher/classes';
 const PAGE_SIZE = 10;
-
-const Icon = ({ children, className = '' }) => (
-  <svg
-    className={`icon ${className}`.trim()}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {children}
-  </svg>
-);
 
 function Students({ role }) {
   const [searchParams] = useSearchParams();
@@ -338,24 +324,7 @@ function Students({ role }) {
           eyebrow="Manage cohorts"
           title="Classes and students"
           subtitle="Create classes, add students, and keep levels up to date."
-          icon={
-            <svg
-              className="icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M16 11a4 4 0 1 0-8 0" />
-              <circle cx="8" cy="7" r="3" />
-              <circle cx="17" cy="7" r="3" />
-              <path d="M2 20a6 6 0 0 1 12 0" />
-              <path d="M14 13a5 5 0 0 1 8 7" />
-            </svg>
-          }
+          icon={<Icon.Users className="icon" />}
         />
 
         {error ? <div className="notice error">{error}</div> : null}
@@ -527,11 +496,7 @@ function Students({ role }) {
                   {
                     title: (
                       <span className="col-title">
-                        <Icon className="col-icon">
-                          <path d="M5 20h14" />
-                          <path d="M7 20v-4a5 5 0 0 1 10 0v4" />
-                          <circle cx="12" cy="7" r="3" />
-                        </Icon>
+                        <Icon.User className="col-icon" />
                         Name
                       </span>
                     ),
@@ -540,11 +505,7 @@ function Students({ role }) {
                   {
                     title: (
                       <span className="col-title">
-                        <Icon className="col-icon">
-                          <circle cx="12" cy="8" r="4" />
-                          <path d="M6 22h12" />
-                          <path d="M8 18h8" />
-                        </Icon>
+                        <Icon.ChartLine className="col-icon" />
                         Average score
                       </span>
                     ),
@@ -554,11 +515,7 @@ function Students({ role }) {
                   {
                     title: (
                       <span className="col-title">
-                        <Icon className="col-icon">
-                          <path d="M4 6h16" />
-                          <path d="M4 12h10" />
-                          <path d="M4 18h8" />
-                        </Icon>
+                        <Icon.LayerGroup className="col-icon" />
                         Level
                       </span>
                     ),
@@ -568,10 +525,7 @@ function Students({ role }) {
                   {
                     title: (
                       <span className="col-title">
-                        <Icon className="col-icon">
-                          <path d="M12 6v12" />
-                          <path d="M6 12h12" />
-                        </Icon>
+                        <Icon.Ellipsis className="col-icon" />
                         Actions
                       </span>
                     ),

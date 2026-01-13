@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChartLine, FaLayerGroup, FaListOl, FaBolt } from 'react-icons/fa';
 import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
+import Icon from '../../Components/Icons';
 import './StudentDashboard.css';
 
 const API_BASE = 'http://localhost:5144/api/student/lessons';
@@ -202,19 +202,19 @@ function StudentDashboard({ role }) {
           averageScore
         ),
       description: 'Based on first attempts',
-      icon: <FaChartLine />,
+      icon: <Icon.ChartLine />,
     },
     {
       label: 'Proficiency level',
       value: proficiencyLevel,
       description: 'Keep up the momentum',
-      icon: <FaLayerGroup />,
+      icon: <Icon.LayerGroup />,
     },
     {
       label: 'Lessons to complete',
       value: loadingLessons ? '…' : todoLessons.length,
       description: 'Assigned and pending',
-      icon: <FaListOl />,
+      icon: <Icon.ListOl />,
     },
   ];
 
@@ -225,30 +225,14 @@ function StudentDashboard({ role }) {
         eyebrow={todayLabel}
         title={`Welcome back, ${studentName}`}
         subtitle="Stay on top of assignments and track your growth."
-        icon={
-          <svg
-            className="icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <rect x="3" y="3" width="8" height="8" rx="2" />
-            <rect x="13" y="3" width="8" height="5" rx="2" />
-            <rect x="13" y="10" width="8" height="11" rx="2" />
-            <rect x="3" y="13" width="8" height="8" rx="2" />
-          </svg>
-        }
+        icon={<Icon.Dashboard className="icon" />}
         action={className ? <div className="class-chip">{className}</div> : null}
       />
 
       <div className="section-header">
         <h2>Your progress at a glance</h2>
         <div className="header-badge with-icon">
-          <FaBolt />
+          <Icon.Bolt />
           Your learning, simplified
         </div>
       </div>

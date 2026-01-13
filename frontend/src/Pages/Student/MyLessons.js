@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
 import DataGrid from '../../Components/DataGrid';
+import Icon from '../../Components/Icons';
 import './MyLessons.css';
 
 const API_BASE = 'http://localhost:5144/api/student/lessons';
@@ -108,21 +109,6 @@ const stripChangesText = (text) => {
   const idx = text.indexOf('Changes:');
   return idx === -1 ? text : text.slice(0, idx).trim();
 };
-
-const Icon = ({ children, className = '' }) => (
-  <svg
-    className={`icon ${className}`.trim()}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {children}
-  </svg>
-);
 
 const parseChangeLines = (text) => {
   if (!text) return [];
@@ -762,12 +748,7 @@ function MyLessons({ role }) {
               onClick={() => toggleMic(key)}
               disabled={inFeedback}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a1 1 0 0 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 0 1-2 0v-3.07A7 7 0 0 1 5 11a1 1 0 0 1 2 0 5 5 0 0 0 10 0Z"
-                />
-              </svg>
+              <Icon.Microphone className="icon" />
               {listening && listeningQuestionRef.current === key ? 'Listening…' : 'Speak'}
             </button>
           ) : null}
@@ -825,44 +806,21 @@ function MyLessons({ role }) {
           title="My Lessons"
           subtitle="Work through your lessons."
           variant="student"
-          icon={
-            <Icon>
-              <path d="M2 4.5h7a4 4 0 0 1 4 4v11.5a3 3 0 0 0-3-3H2z" />
-              <path d="M22 4.5h-7a4 4 0 0 0-4 4v11.5a3 3 0 0 1 3-3h8z" />
-            </Icon>
-          }
+          icon={<Icon.BookOpen className="icon" />}
           meta={[
             {
               label: `${activeRows.length} active`,
-              icon: (
-                <Icon className="mini-icon">
-                  <path d="M6 6h12" />
-                  <path d="M6 12h12" />
-                  <path d="M6 18h8" />
-                </Icon>
-              ),
+              icon: <Icon.List className="mini-icon" />,
             },
             {
               label: `${completedRows.length} completed`,
               tone: 'ghost',
-              icon: (
-                <Icon className="mini-icon">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M8.5 12.5l2.5 2.5 4.5-5" />
-                </Icon>
-              ),
+              icon: <Icon.CheckCircle className="mini-icon" />,
             },
             {
               label: `Next due: ${nextDueLabel}`,
               tone: 'subtle',
-              icon: (
-                <Icon className="mini-icon">
-                  <path d="M7 3v3" />
-                  <path d="M17 3v3" />
-                  <rect x="3" y="6" width="18" height="14" rx="2" />
-                  <path d="M3 10h18" />
-                </Icon>
-              ),
+              icon: <Icon.Calendar className="mini-icon" />,
             },
           ]}
         />
@@ -874,14 +832,7 @@ function MyLessons({ role }) {
             <div>
               <h3 className="section-title">
                 <span className="section-icon">
-                  <Icon>
-                    <rect x="4" y="5" width="4" height="4" rx="1" />
-                    <path d="M10 7h10" />
-                    <rect x="4" y="11" width="4" height="4" rx="1" />
-                    <path d="M10 13h10" />
-                    <rect x="4" y="17" width="4" height="4" rx="1" />
-                    <path d="M10 19h10" />
-                  </Icon>
+                  <Icon.List className="icon" />
                 </span>
                 To Do
               </h3>
@@ -939,10 +890,7 @@ function MyLessons({ role }) {
               {
                 title: (
                   <span className="col-title">
-                    <Icon className="col-icon">
-                      <path d="M3 4h7a4 4 0 0 1 4 4v12a2 2 0 0 0-2-2H3z" />
-                      <path d="M21 4h-7a4 4 0 0 0-4 4v12a2 2 0 0 1 2-2h9z" />
-                    </Icon>
+                    <Icon.BookOpen className="col-icon" />
                     Name
                   </span>
                 ),
@@ -951,12 +899,7 @@ function MyLessons({ role }) {
               {
                 title: (
                   <span className="col-title">
-                    <Icon className="col-icon">
-                      <path d="M7 3v3" />
-                      <path d="M17 3v3" />
-                      <rect x="3" y="6" width="18" height="14" rx="2" />
-                      <path d="M3 10h18" />
-                    </Icon>
+                    <Icon.Calendar className="col-icon" />
                     Due date
                   </span>
                 ),
@@ -966,11 +909,7 @@ function MyLessons({ role }) {
               {
                 title: (
                   <span className="col-title">
-                    <Icon className="col-icon">
-                      <path d="M6 18v-5" />
-                      <path d="M12 18v-9" />
-                      <path d="M18 18v-3" />
-                    </Icon>
+                    <Icon.Signal className="col-icon" />
                     Status
                   </span>
                 ),
@@ -989,10 +928,7 @@ function MyLessons({ role }) {
                 cells: [
                   <div className="cell-strong lesson-title">
                     <span className="lesson-title-icon">
-                      <Icon>
-                        <path d="M4 5h8a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4z" />
-                        <path d="M20 5h-5a3 3 0 0 0-3 3v11a2 2 0 0 1 2-2h6z" />
-                      </Icon>
+                      <Icon.BookOpen className="icon" />
                     </span>
                     <span>{lesson.title}</span>
                   </div>,
@@ -1008,9 +944,7 @@ function MyLessons({ role }) {
                       }
                     >
                       <span className="btn-icon" aria-hidden="true">
-                        <Icon>
-                          <path d="M5 4l14 8-14 8z" />
-                        </Icon>
+                        <Icon.Play className="icon" />
                       </span>
                       {hasDraft ? 'Continue' : 'Start'}
                     </button>
@@ -1049,10 +983,7 @@ function MyLessons({ role }) {
             <div>
               <h3 className="section-title">
                 <span className="section-icon">
-                  <Icon>
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M8.5 12.5l2.5 2.5 4.5-5" />
-                  </Icon>
+                  <Icon.CheckCircle className="icon" />
                 </span>
                 Completed
               </h3>
@@ -1116,10 +1047,7 @@ function MyLessons({ role }) {
               {
                 title: (
                   <span className="col-title">
-                    <Icon className="col-icon">
-                      <path d="M3 4h7a4 4 0 0 1 4 4v12a2 2 0 0 0-2-2H3z" />
-                      <path d="M21 4h-7a4 4 0 0 0-4 4v12a2 2 0 0 1 2-2h9z" />
-                    </Icon>
+                    <Icon.BookOpen className="col-icon" />
                     Name
                   </span>
                 ),
@@ -1128,11 +1056,7 @@ function MyLessons({ role }) {
               {
                 title: (
                   <span className="col-title">
-                    <Icon className="col-icon">
-                      <circle cx="12" cy="8" r="4" />
-                      <path d="M6 22h12" />
-                      <path d="M8 18h8" />
-                    </Icon>
+                    <Icon.Medal className="col-icon" />
                     Score
                   </span>
                 ),
@@ -1142,11 +1066,7 @@ function MyLessons({ role }) {
               {
                 title: (
                   <span className="col-title">
-                    <Icon className="col-icon">
-                      <path d="M4 6h16" />
-                      <path d="M4 12h10" />
-                      <path d="M4 18h8" />
-                    </Icon>
+                    <Icon.ClipboardCheck className="col-icon" />
                     Review
                   </span>
                 ),
@@ -1186,10 +1106,7 @@ function MyLessons({ role }) {
                 cells: [
                   <div className="cell-strong lesson-title">
                     <span className="lesson-title-icon">
-                      <Icon>
-                        <path d="M4 5h8a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4z" />
-                        <path d="M20 5h-5a3 3 0 0 0-3 3v11a2 2 0 0 1 2-2h6z" />
-                      </Icon>
+                      <Icon.BookOpen className="icon" />
                     </span>
                     <span>{lesson.title}</span>
                   </div>,
@@ -1218,12 +1135,7 @@ function MyLessons({ role }) {
                       onClick={() => openAttempt(lesson)}
                     >
                       <span className="btn-icon" aria-hidden="true">
-                        <Icon>
-                          <path d="M4 4v6h6" />
-                          <path d="M20 20v-6h-6" />
-                          <path d="M20 8a8 8 0 0 0-14-4" />
-                          <path d="M4 16a8 8 0 0 0 14 4" />
-                        </Icon>
+                        <Icon.Redo className="icon" />
                       </span>
                       {retryAllowed ? 'Retry lesson' : 'Retry used'}
                     </button>
@@ -1234,11 +1146,7 @@ function MyLessons({ role }) {
                       onClick={() => openAttempt(lesson, latestAttempt?.attemptId, true)}
                     >
                       <span className="btn-icon" aria-hidden="true">
-                        <Icon>
-                          <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h6" />
-                          <path d="M18 8h6" />
-                          <path d="M21 5v6" />
-                        </Icon>
+                        <Icon.CommentDots className="icon" />
                       </span>
                       View feedback
                     </button>
