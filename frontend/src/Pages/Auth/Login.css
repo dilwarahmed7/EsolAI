@@ -123,6 +123,22 @@
   filter: brightness(1.02);
   box-shadow: var(--shadow-strong);
 }
+
+.auth-link {
+  margin-top: 12px;
+  background: transparent;
+  border: none;
+  color: var(--primary-strong);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.auth-link:hover,
+.auth-link:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
   
   .register-footer {
   margin-top: 15px;
@@ -182,6 +198,27 @@
     margin-bottom: 15px;
     font-size: 0.9rem;
   }
+
+.success-message {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.dev-note {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.dev-link {
+  color: var(--primary-strong);
+}
   
   .register-btn:disabled {
     opacity: 0.7;
