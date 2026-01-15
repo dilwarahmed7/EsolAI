@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using BCrypt.Net;
 
@@ -18,11 +19,13 @@ namespace backend.Controllers
     {
         private readonly AppDbContext _db;
         private readonly IConfiguration _config;
+        private readonly IWebHostEnvironment _env;
 
-        public AuthController(AppDbContext db, IConfiguration config)
+        public AuthController(AppDbContext db, IConfiguration config, IWebHostEnvironment env)
         {
             _db = db;
             _config = config;
+            _env = env;
         }
 
         [HttpPost("register")]
@@ -122,6 +125,59 @@ namespace backend.Controllers
                 role = user.Role,
                 profile
             });
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var normalized = dto.Email.Trim().ToLowerInvariant();
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalized);
+
+            var token = GenerateResetToken();
+            if (user != null)
+            {
+                user.ResetTokenHash = HashToken(token);
+                user.ResetTokenExpiresAt = DateTime.UtcNow.AddHours(1);
+                await _db.SaveChangesAsync();
+            }
+
+            var response = new
+            {
+                message = "If an account exists for that email, we have sent password reset instructions.",
+                resetToken = _env.IsDevelopment() ? token : null,
+                resetUrl = _env.IsDevelopment() ? $"http://localhost:3000/reset-password?token={token}" : null
+            };
+
+            return Ok(response);
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (dto.NewPassword != dto.ConfirmPassword)
+                return BadRequest("New password and confirmation do not match.");
+
+            var tokenHash = HashToken(dto.Token);
+            var user = await _db.Users.FirstOrDefaultAsync(u =>
+                u.ResetTokenHash == tokenHash &&
+                u.ResetTokenExpiresAt.HasValue &&
+                u.ResetTokenExpiresAt.Value > DateTime.UtcNow);
+
+            if (user == null)
+                return BadRequest("Reset token is invalid or expired.");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.ResetTokenHash = null;
+            user.ResetTokenExpiresAt = null;
+            await _db.SaveChangesAsync();
+
+            return Ok("Password reset successfully.");
         }
 
         [Authorize]
@@ -276,6 +332,22 @@ namespace backend.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private static string GenerateResetToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(32);
+            return Convert.ToBase64String(bytes)
+                .TrimEnd('=')
+                .Replace('+', '-')
+                .Replace('/', '_');
+        }
+
+        private static string HashToken(string token)
+        {
+            using var sha = SHA256.Create();
+            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(token));
+            return Convert.ToBase64String(bytes);
         }
     }
 }

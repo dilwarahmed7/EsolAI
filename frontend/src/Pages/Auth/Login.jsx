@@ -97,6 +97,14 @@ const Login = ({ setRole }) => {
               {loading ? "Logging in..." : "Log In"}
             </button>
 
+            <button
+              type="button"
+              className="auth-link"
+              onClick={() => navigate("/forgot-password")}
+            >
+              Forgot password?
+            </button>
+
             <p className="register-footer">
               Don't have an account? <a href="/register">Create one here</a>
             </p>

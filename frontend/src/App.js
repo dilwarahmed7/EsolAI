@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Register from './Pages/Auth/Register';
 import Login from './Pages/Auth/Login';
 import EditProfile from './Pages/Auth/EditProfile';
+import ForgotPassword from './Pages/Auth/ForgotPassword';
+import ResetPassword from './Pages/Auth/ResetPassword';
 import ScrollToTop from './Components/ScrollToTop';
 
 import StudentDashboard from './Pages/Student/StudentDashboard';
@@ -55,6 +57,8 @@ function App() {
         {/* Auth routes */}
         <Route path="/login" element={<Login setRole={setRole} />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Protected routes for student */}
         {role === "student" && (

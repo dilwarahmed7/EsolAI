@@ -18,6 +18,9 @@ namespace backend.Models
         [Required]
         public string Role { get; set; } = "Student";
 
+        public string? ResetTokenHash { get; set; }
+        public DateTime? ResetTokenExpiresAt { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public Student? StudentProfile { get; set; }
