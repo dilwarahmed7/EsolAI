@@ -6,5 +6,6 @@ namespace backend.Models.DTOs
         public string FirstLanguage { get; set; } = string.Empty;
         public int Age { get; set; }
         public string Level { get; set; } = string.Empty;
+        public string? Seed { get; set; }
     }
 }

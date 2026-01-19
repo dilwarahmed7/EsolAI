@@ -29,10 +29,11 @@ namespace backend.Services
                      ?? throw new InvalidOperationException("GEMINI_API_KEY missing.");
         }
 
-        public async Task<(string Output, string ModelUsed)> GenerateTextAsync(string prompt, string? model = null)
+        public async Task<(string Output, string ModelUsed)> GenerateTextAsync(string prompt, string? model = null, string? seed = null)
         {
-            string randomSeed = Guid.NewGuid().ToString();
-            prompt += $"\n\nRANDOM_SEED: {randomSeed}";
+            var requestSeed = seed ?? Guid.NewGuid().ToString("N");
+
+            prompt += $"\n\nREQUEST_SEED: {requestSeed}";
 
             var modelToUse = model ?? "gemma-3-4b-it";
 
@@ -44,7 +45,7 @@ namespace backend.Services
                 if (_dailyUsage.TryGetValue(m, out var count) && count >= 19)
                     continue;
 
-                Console.WriteLine($"[GeminiClient] Trying model: {m} (Seed: {randomSeed})");
+                Console.WriteLine($"[GeminiClient] Trying model: {m} (Seed: {requestSeed})");
 
                 try
                 {
@@ -59,12 +60,10 @@ namespace backend.Services
                 catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
                 {
                     Console.WriteLine($"[GeminiClient] 429 for model {m}, falling back...");
-                    continue;
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[GeminiClient] Model {m} failed: {ex.Message}. Falling back...");
-                    continue;
                 }
             }
 
