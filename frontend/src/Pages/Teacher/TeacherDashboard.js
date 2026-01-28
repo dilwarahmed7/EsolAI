@@ -148,9 +148,11 @@ function TeacherDashboard({ role }) {
           averageScorePercent:
             data.averageScorePercent ?? data.AverageScorePercent ?? '--',
         });
+        setAverageTrend(data.averageTrend ?? data.AverageTrend ?? null);
       } catch (err) {
         console.error(err);
         setSummary({ activeStudents: '--', lessonsInProgress: '--', averageScorePercent: '--' });
+        setAverageTrend(null);
       } finally {
         setLoadingSummary(false);
       }
@@ -159,6 +161,7 @@ function TeacherDashboard({ role }) {
   }, []);
 
   useEffect(() => {
+    if (averageTrend != null) return;
     if (typeof summary.averageScorePercent !== 'number') {
       setAverageTrend(null);
       return;
@@ -166,18 +169,19 @@ function TeacherDashboard({ role }) {
     const prevRaw = sessionStorage.getItem('teacherAvgScorePrev');
     const prev = prevRaw != null ? Number(prevRaw) : null;
     if (Number.isFinite(prev)) {
-      if (summary.averageScorePercent > prev) {
-        setAverageTrend('up');
-      } else if (summary.averageScorePercent < prev) {
-        setAverageTrend('down');
-      } else {
+      const delta = summary.averageScorePercent - prev;
+      if (Math.abs(delta) < 0.05) {
         setAverageTrend('flat');
+      } else if (delta > 0) {
+        setAverageTrend('up');
+      } else {
+        setAverageTrend('down');
       }
     } else {
       setAverageTrend(null);
     }
     sessionStorage.setItem('teacherAvgScorePrev', String(summary.averageScorePercent));
-  }, [summary.averageScorePercent]);
+  }, [averageTrend, summary.averageScorePercent]);
 
   return (
     <PageLayout title={null} role={role}>

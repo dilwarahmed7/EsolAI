@@ -5,6 +5,9 @@
   width: 100%;
   flex: 1;
   min-height: 0;
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #e2e8f0;
+  --tooltip-text: #0f172a;
 }
 
 .progress-body {
@@ -264,6 +267,12 @@
 .dark-mode .progress-icon {
   background: #111827;
   color: #93c5fd;
+}
+
+.dark-mode .progress {
+  --tooltip-bg: #0b1224;
+  --tooltip-border: #1f2937;
+  --tooltip-text: #f8fafc;
 }
 
 .dark-mode .progress-range-toggle {

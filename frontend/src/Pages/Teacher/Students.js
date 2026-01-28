@@ -105,12 +105,18 @@ function Students({ role }) {
         if (!res.ok) throw new Error((await res.text()) || 'Unable to load students.');
 
         const data = await res.json();
-        const normalized = data.map((s) => ({
-          id: s.id || s.Id,
-          fullName: s.fullName || s.FullName,
-          level: s.level || s.Level || '',
-          averageScore: typeof s.averageScore === 'number' ? s.averageScore : null,
-        }));
+        const normalized = data.map((s) => {
+          const avgRaw = s.averageScore ?? s.AverageScore ?? s.averageScorePercent ?? s.AverageScorePercent;
+          const avgNum = Number(avgRaw);
+          const avgRounded = Number.isFinite(avgNum) ? Math.round(avgNum * 10) / 10 : null;
+          return {
+            id: s.id || s.Id,
+            fullName: s.fullName || s.FullName,
+            level: s.level || s.Level || '',
+            averageScore: avgRounded,
+            averageTrend: s.averageTrend ?? s.AverageTrend ?? null,
+          };
+        });
 
         setStudents(normalized);
       } catch (err) {
@@ -177,12 +183,18 @@ function Students({ role }) {
       });
       if (reload.ok) {
         const data = await reload.json();
-        const normalized = data.map((s) => ({
-          id: s.id || s.Id,
-          fullName: s.fullName || s.FullName,
-          level: s.level || s.Level || '',
-          averageScore: typeof s.averageScore === 'number' ? s.averageScore : null,
-        }));
+        const normalized = data.map((s) => {
+          const avgRaw = s.averageScore ?? s.AverageScore ?? s.averageScorePercent ?? s.AverageScorePercent;
+          const avgNum = Number(avgRaw);
+          const avgRounded = Number.isFinite(avgNum) ? Math.round(avgNum * 10) / 10 : null;
+          return {
+            id: s.id || s.Id,
+            fullName: s.fullName || s.FullName,
+            level: s.level || s.Level || '',
+            averageScore: avgRounded,
+            averageTrend: s.averageTrend ?? s.AverageTrend ?? null,
+          };
+        });
         setStudents(normalized);
       }
     } catch (err) {
@@ -538,7 +550,22 @@ function Students({ role }) {
                   onDoubleClick: () => openLevelDialog(student),
                   cells: [
                     <div className="cell-strong">{student.fullName}</div>,
-                    typeof student.averageScore === 'number' ? `${student.averageScore}%` : 'Not set',
+                    typeof student.averageScore === 'number' ? (
+                      <div className="avg-score-cell">
+                        <span>{student.averageScore}%</span>
+                        {student.averageTrend ? (
+                          <span className={`avg-trend ${student.averageTrend}`}>
+                            {student.averageTrend === 'up'
+                              ? '▲'
+                              : student.averageTrend === 'down'
+                              ? '▼'
+                              : '•'}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : (
+                      'Not set'
+                    ),
                     student.level || 'N/A',
                     <div className="table-actions">
                       <div

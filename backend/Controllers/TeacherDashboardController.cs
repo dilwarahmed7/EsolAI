@@ -47,26 +47,80 @@ namespace backend.Controllers
                 .Where(l => l.TeacherId == teacher.Id && l.Status == LessonStatus.Published)
                 .CountAsync();
 
-            var firstAttempts = await _db.LessonAttempts
+            int ResolveScore(LessonAttempt attempt, QuestionType type, int fallback)
+            {
+                var response = attempt.Responses.FirstOrDefault(r => r.LessonQuestion.Type == type);
+                if (response == null)
+                    return fallback;
+
+                if (response.FeedbackReview?.TeacherScore != null)
+                    return response.FeedbackReview.TeacherScore.Value;
+                if (!response.NeedsReview || attempt.TeacherReviewCompleted)
+                    return response.Score;
+                if (response.AiScore != null)
+                    return response.AiScore.Value;
+
+                return fallback;
+            }
+
+            var attempts = await _db.LessonAttempts
                 .Where(a =>
                     a.IsRetry == false &&
                     a.SubmittedAt != null &&
-                    a.Lesson.TeacherId == teacher.Id)
-                .Select(a => a.TotalScore)
+                    a.Lesson.TeacherId == teacher.Id &&
+                    a.Lesson.Status == LessonStatus.Published &&
+                    a.Lesson.Assignments.Any(assign => classIds.Contains(assign.ClassId)))
+                .Include(a => a.Responses)
+                    .ThenInclude(r => r.FeedbackReview)
+                .Include(a => a.Responses)
+                    .ThenInclude(r => r.LessonQuestion)
                 .ToListAsync();
 
             double avgScorePercent = 0;
-            if (firstAttempts.Count > 0)
+            string? avgTrend = null;
+            if (attempts.Count > 0)
             {
-                var avgRaw = firstAttempts.Average();
-                avgScorePercent = Math.Round((avgRaw / 22.0) * 100.0, 1);
+                var scored = attempts
+                    .Select(attempt =>
+                    {
+                        var writing = ResolveScore(attempt, QuestionType.Writing, attempt.WritingScore);
+                        var speaking = ResolveScore(attempt, QuestionType.Speaking, attempt.SpeakingScore);
+                        return new
+                        {
+                            Total = (double)(attempt.ReadingScore + writing + speaking),
+                            attempt.SubmittedAt
+                        };
+                    })
+                    .Where(x => x.SubmittedAt != null)
+                    .OrderByDescending(x => x.SubmittedAt)
+                    .ToList();
+
+                if (scored.Count > 0)
+                {
+                    var avgRaw = scored.Average(x => x.Total);
+                    avgScorePercent = Math.Round((avgRaw / 22.0) * 100.0, 1);
+                }
+
+                if (scored.Count >= 2)
+                {
+                    var latest = scored[0];
+                    var prevAvgRaw = scored.Skip(1).Average(x => x.Total);
+                    var latestPct = (latest.Total / 22.0) * 100.0;
+                    var prevPct = (prevAvgRaw / 22.0) * 100.0;
+                    var delta = latestPct - prevPct;
+                    if (Math.Abs(delta) < 0.05)
+                        avgTrend = "flat";
+                    else
+                        avgTrend = delta > 0 ? "up" : "down";
+                }
             }
 
             return Ok(new
             {
                 ActiveStudents = activeStudents,
                 LessonsInProgress = lessonsInProgress,
-                AverageScorePercent = avgScorePercent
+                AverageScorePercent = avgScorePercent,
+                AverageTrend = avgTrend
             });
         }
     }

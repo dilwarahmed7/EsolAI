@@ -749,7 +749,7 @@ function Lessons({ role }) {
                                 handleDelete(id);
                               }}
                             >
-                              Delete
+                              Archive
                             </button>
                           </div>
                         ) : null}
