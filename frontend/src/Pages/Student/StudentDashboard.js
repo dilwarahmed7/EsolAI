@@ -4,6 +4,7 @@ import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
 import Icon from '../../Components/Icons';
 import './StudentDashboard.css';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 const API_BASE = 'http://localhost:5144/api/student/lessons';
 
@@ -26,6 +27,9 @@ const normalizeAttempt = (raw) => {
   if (!raw) return null;
   return {
     totalScore: raw.totalScore ?? raw.TotalScore ?? null,
+    readingScore: raw.readingScore ?? raw.ReadingScore ?? null,
+    writingScore: raw.writingScore ?? raw.WritingScore ?? null,
+    speakingScore: raw.speakingScore ?? raw.SpeakingScore ?? null,
     submittedAt: raw.submittedAt || raw.SubmittedAt,
   };
 };
@@ -183,6 +187,39 @@ function StudentDashboard({ role }) {
     return 'flat';
   }, [derivedAverage, firstAttemptScores]);
 
+  const bestLearningTypesData = useMemo(() => {
+    const totals = {
+      Reading: { score: 0, count: 0, outOf: 2 },
+      Writing: { score: 0, count: 0, outOf: 10 },
+      Speaking: { score: 0, count: 0, outOf: 10 },
+    };
+
+    lessonsWithStatus.forEach((lesson) => {
+      const attempt = lesson.originalAttempt || lesson.latestAttempt;
+      if (!attempt) return;
+
+      if (typeof attempt.readingScore === 'number') {
+        totals.Reading.score += attempt.readingScore;
+        totals.Reading.count += 1;
+      }
+      if (typeof attempt.writingScore === 'number') {
+        totals.Writing.score += attempt.writingScore;
+        totals.Writing.count += 1;
+      }
+      if (typeof attempt.speakingScore === 'number') {
+        totals.Speaking.score += attempt.speakingScore;
+        totals.Speaking.count += 1;
+      }
+    });
+
+    return Object.entries(totals).map(([type, { score, count, outOf }]) => {
+      if (!count || !outOf) return { type, percent: 0 };
+      const avg = score / count;
+      const percent = Math.round((avg / outOf) * 100);
+      return { type, percent };
+    });
+  }, [lessonsWithStatus]);
+
   const stats = [
     {
       label: 'Average score',
@@ -230,11 +267,7 @@ function StudentDashboard({ role }) {
       />
 
       <div className="section-header">
-        <h2>Your progress at a glance</h2>
-        <div className="header-badge with-icon">
-          <Icon.Bolt />
-          Your learning, simplified
-        </div>
+        <h2>Your Personalised Dashboard</h2>
       </div>
 
       <div className="stats-grid">
@@ -309,12 +342,29 @@ function StudentDashboard({ role }) {
 
           <QuickCard
             title="Progress"
-            subtitle="Your recent trends"
+            subtitle="Last 7 days performance"
             onClick={() => navigate('/progress')}
-          />
+          >
+            {loadingLessons ? (
+              <div className="progress-quick-empty">Loading progress…</div>
+            ) : lessonsWithStatus.length === 0 ? (
+              <div className="progress-quick-empty">No progress yet.</div>
+            ) : (
+              <div className="progress-quick-chart">
+                <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={bestLearningTypesData} margin={{ top: 6, right: 8, left: 0, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="type" tickLine={false} axisLine={false} />
+                      <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
+                      <Tooltip formatter={(v) => [`${v}%`, 'Score']} />
+                      <Bar dataKey="percent" radius={[8, 8, 0, 0]} fill="var(--dashboard-bar-fill)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+          </QuickCard>
         </div>
 
-      <div className="dashboard-placeholder" />
     </PageLayout>
   );
 }

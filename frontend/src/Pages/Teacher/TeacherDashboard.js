@@ -281,7 +281,6 @@ function TeacherDashboard({ role }) {
         </div>
       </div>
 
-      <div className="dashboard-placeholder" />
     </PageLayout>
   );
 }

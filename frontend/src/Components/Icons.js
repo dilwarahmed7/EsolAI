@@ -29,6 +29,7 @@ import {
   FaPlus,
   FaSun,
   FaMoon,
+  FaFire
 } from 'react-icons/fa';
 
 const Icon = {
@@ -62,6 +63,7 @@ const Icon = {
   Plus: FaPlus,
   Sun: FaSun,
   Moon: FaMoon,
+  Fire: FaFire
 };
 
 export default Icon;
