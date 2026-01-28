@@ -121,6 +121,31 @@
   min-width: 180px;
 }
 
+.avg-score-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.avg-trend {
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.avg-trend.up {
+  color: #16a34a;
+}
+
+.avg-trend.down {
+  color: #dc2626;
+}
+
+.avg-trend.flat {
+  color: var(--text-secondary);
+}
+
 .ghost-btn.small,
 .danger-btn.small {
   padding: 8px 10px;

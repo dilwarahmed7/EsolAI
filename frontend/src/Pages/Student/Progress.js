@@ -82,6 +82,7 @@ const getAndUpdateDailyStreak = () => {
 const normalizeLesson = (l) => ({
   ...l,
   dueDate: l.dueDate ?? l.DueDate ?? null,
+  updatedAt: l.updatedAt ?? l.UpdatedAt ?? null,
   scoreOutOf: l.scoreOutOf ?? l.ScoreOutOf ?? 22,
   latestAttempt: l.latestAttempt ?? l.LatestAttempt ?? null,
   originalAttempt: l.originalAttempt ?? l.OriginalAttempt ?? null,
@@ -217,14 +218,13 @@ function Progress({ role }) {
     const [latest, ...rest] = scoredWithDates;
     if (!latest || rest.length === 0) return null;
 
-    const prevAvg =
+    const latestScore = (latest.total / latest.outOf) * 100;
+    const prevAverage =
       rest.reduce((sum, s) => sum + (s.total / s.outOf) * 100, 0) / rest.length;
 
-    const prevAverageRounded = Math.round(prevAvg * 10) / 10;
-
-    if (derivedAverage > prevAverageRounded) return 'up';
-    if (derivedAverage < prevAverageRounded) return 'down';
-    return 'flat';
+    const delta = latestScore - prevAverage;
+    if (Math.abs(delta) < 0.05) return 'flat';
+    return delta > 0 ? 'up' : 'down';
   }, [derivedAverage, firstAttemptScoresInRange]);
 
   const stats = [
@@ -272,8 +272,11 @@ function Progress({ role }) {
     const now = Date.now();
     return lessonsWithStatus.filter((lesson) => {
       const attempt = lesson.originalAttempt || lesson.latestAttempt;
-      if (!attempt?.submittedAt) return false;
-      const time = new Date(attempt.submittedAt).getTime();
+      const submittedAt = attempt?.submittedAt;
+      const fallbackTime = lesson.updatedAt || lesson.dueDate;
+      const timeSource = submittedAt || fallbackTime;
+      if (!timeSource) return false;
+      const time = new Date(timeSource).getTime();
       if (!Number.isFinite(time)) return false;
       return now - time <= windowMs;
     });
@@ -292,6 +295,11 @@ function Progress({ role }) {
       fill: STATUS_COLORS[name],
     }));
   }, [lessonsInRange]);
+
+  const lessonStatusTotal = useMemo(
+    () => lessonStatusData.reduce((sum, item) => sum + item.value, 0),
+    [lessonStatusData]
+  );
 
   const bestLearningTypesData = useMemo(() => {
     const attempts = lessonsInRange
@@ -414,6 +422,13 @@ function Progress({ role }) {
                       />
                       <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                       <Tooltip
+                        contentStyle={{
+                          background: 'var(--tooltip-bg)',
+                          borderColor: 'var(--tooltip-border)',
+                          color: 'var(--tooltip-text)',
+                        }}
+                        itemStyle={{ color: 'var(--tooltip-text)' }}
+                        labelStyle={{ color: 'var(--tooltip-text)' }}
                         labelFormatter={(ms) =>
                           new Date(ms).toLocaleString(undefined, {
                             day: '2-digit',
@@ -451,14 +466,27 @@ function Progress({ role }) {
                           dataKey="value"
                           nameKey="name"
                           outerRadius={70}
+                          cy="62%"
                           labelLine={false}
-                          label={({ name, percent }) => {
-                            if (percent <= 0) return '';
-                            if (percent < 0.08) return '';
-                            return `${name} ${(percent * 100).toFixed(0)}%`;
-                          }}
                         />
-                        <Legend />
+                        <Tooltip
+                          formatter={(value, name) => [
+                            lessonStatusTotal > 0
+                              ? `${Math.round((Number(value) / lessonStatusTotal) * 100)}%`
+                              : '0%',
+                            name,
+                          ]}
+                          contentStyle={{
+                            background: 'var(--tooltip-bg)',
+                            borderColor: 'var(--tooltip-border)',
+                            color: 'var(--tooltip-text)',
+                            fontSize: '0.8rem',
+                            padding: '6px 8px',
+                          }}
+                          itemStyle={{ color: 'var(--tooltip-text)' }}
+                          labelStyle={{ color: 'var(--tooltip-text)' }}
+                        />
+                        <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 32 }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>

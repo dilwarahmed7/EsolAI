@@ -176,15 +176,16 @@ function StudentDashboard({ role }) {
       .sort((a, b) => b.time - a.time);
 
     if (scoredWithDates.length < 2) return null;
-    const [, ...rest] = scoredWithDates;
-    if (rest.length === 0) return null;
+    const [latest, ...rest] = scoredWithDates;
+    if (!latest || rest.length === 0) return null;
+
+    const latestScore = (latest.total / latest.outOf) * 100;
     const prevAverage =
-      Math.round(
-        (rest.reduce((sum, s) => sum + (s.total / s.outOf) * 100, 0) / rest.length) * 10
-      ) / 10;
-    if (derivedAverage > prevAverage) return 'up';
-    if (derivedAverage < prevAverage) return 'down';
-    return 'flat';
+      rest.reduce((sum, s) => sum + (s.total / s.outOf) * 100, 0) / rest.length;
+
+    const delta = latestScore - prevAverage;
+    if (Math.abs(delta) < 0.05) return 'flat';
+    return delta > 0 ? 'up' : 'down';
   }, [derivedAverage, firstAttemptScores]);
 
   const bestLearningTypesData = useMemo(() => {
@@ -342,7 +343,7 @@ function StudentDashboard({ role }) {
 
           <QuickCard
             title="Progress"
-            subtitle="Last 7 days performance"
+            subtitle="All time performance"
             onClick={() => navigate('/progress')}
           >
             {loadingLessons ? (

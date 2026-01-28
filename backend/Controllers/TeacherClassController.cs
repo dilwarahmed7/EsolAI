@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.Models;
 using backend.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -98,19 +99,79 @@ namespace backend.Controllers
 
             const double scoreOutOf = 22.0;
 
-            var averageLookup = await _context.LessonAttempts
+            int ResolveScore(LessonAttempt attempt, QuestionType type, int fallback)
+            {
+                var response = attempt.Responses.FirstOrDefault(r => r.LessonQuestion.Type == type);
+                if (response == null)
+                    return fallback;
+
+                if (response.FeedbackReview?.TeacherScore != null)
+                    return response.FeedbackReview.TeacherScore.Value;
+                if (!response.NeedsReview || attempt.TeacherReviewCompleted)
+                    return response.Score;
+                if (response.AiScore != null)
+                    return response.AiScore.Value;
+
+                return fallback;
+            }
+
+            var attempts = await _context.LessonAttempts
                 .Where(a =>
                     a.Student.ClassId == classId &&
                     a.Lesson.TeacherId == teacher.Id &&
+                    a.Lesson.Status == LessonStatus.Published &&
+                    a.Lesson.Assignments.Any(assign => assign.ClassId == classId) &&
                     a.IsRetry == false &&
                     a.SubmittedAt != null)
+                .Include(a => a.Responses)
+                    .ThenInclude(r => r.FeedbackReview)
+                .Include(a => a.Responses)
+                    .ThenInclude(r => r.LessonQuestion)
+                .ToListAsync();
+
+            var studentStats = attempts
                 .GroupBy(a => a.StudentId)
-                .Select(g => new
-                {
-                    StudentId = g.Key,
-                    AvgRaw = g.Average(a => (double)a.TotalScore)
-                })
-                .ToDictionaryAsync(x => x.StudentId, x => x.AvgRaw);
+                .ToDictionary(
+                    g => g.Key,
+                    g =>
+                    {
+                        var scored = g
+                            .Select(attempt =>
+                            {
+                                var writing = ResolveScore(attempt, QuestionType.Writing, attempt.WritingScore);
+                                var speaking = ResolveScore(attempt, QuestionType.Speaking, attempt.SpeakingScore);
+                                return new
+                                {
+                                    Total = (double)(attempt.ReadingScore + writing + speaking),
+                                    attempt.SubmittedAt
+                                };
+                            })
+                            .Where(x => x.SubmittedAt != null)
+                            .OrderByDescending(x => x.SubmittedAt)
+                            .ToList();
+
+                        if (scored.Count == 0)
+                            return (AvgPercent: (double?)null, Trend: (string?)null);
+
+                        var avgRaw = scored.Average(x => x.Total);
+                        var avgPercent = Math.Round((avgRaw / scoreOutOf) * 100.0, 1);
+
+                        string? trend = null;
+                        if (scored.Count >= 2)
+                        {
+                            var latest = scored[0];
+                            var prevAvgRaw = scored.Skip(1).Average(x => x.Total);
+                            var latestPct = (latest.Total / scoreOutOf) * 100.0;
+                            var prevPct = (prevAvgRaw / scoreOutOf) * 100.0;
+                            var delta = latestPct - prevPct;
+                            if (Math.Abs(delta) < 0.05)
+                                trend = "flat";
+                            else
+                                trend = delta > 0 ? "up" : "down";
+                        }
+
+                        return (AvgPercent: (double?)avgPercent, Trend: trend);
+                    });
 
             var students = await _context.Students
                 .Where(s => s.ClassId == classId)
@@ -125,9 +186,11 @@ namespace backend.Controllers
             var payload = students.Select(s =>
             {
                 double? avgPercent = null;
-                if (averageLookup.TryGetValue(s.Id, out var avgRaw))
+                string? trend = null;
+                if (studentStats.TryGetValue(s.Id, out var stats))
                 {
-                    avgPercent = Math.Round((avgRaw / scoreOutOf) * 100.0, 1);
+                    avgPercent = stats.AvgPercent;
+                    trend = stats.Trend;
                 }
 
                 return new
@@ -135,7 +198,8 @@ namespace backend.Controllers
                     s.Id,
                     s.FullName,
                     s.Level,
-                    AverageScore = avgPercent
+                    AverageScore = avgPercent,
+                    AverageTrend = trend
                 };
             });
 
