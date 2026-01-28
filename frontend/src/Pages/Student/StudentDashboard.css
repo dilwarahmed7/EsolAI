@@ -25,11 +25,13 @@
 .stat-card {
   display: flex;
   gap: 12px;
-  padding: 16px;
+  padding: 18px;
   border-radius: 14px;
   background: linear-gradient(135deg, #ffffff, #f8fafc);
   border: 1px solid #e2e8f0;
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+  min-height: 120px;
+  align-items: center;
 }
 
 .stat-icon {
@@ -97,12 +99,12 @@
   background: linear-gradient(160deg, #ffffff, #f8fafc);
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  padding: 16px;
+  padding: 18px;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 200px;
+  min-height: 260px;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
@@ -146,7 +148,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px;
+  padding: 12px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
@@ -233,9 +235,20 @@
   transform: translateY(-1px);
 }
 
+.progress-quick-chart {
+  width: 100%;
+  height: 200px;
+  --dashboard-bar-fill: #6366f1;
+}
+
+.progress-quick-empty {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
 .progress-placeholder {
   width: 100%;
-  height: 160px;
+  height: 200px;
   border-radius: 12px;
   background: linear-gradient(180deg, #f8fafc, #ffffff);
   border: 1px dashed #e2e8f0;
@@ -268,7 +281,7 @@
 }
 
 .dashboard-placeholder {
-  min-height: 200px;
+  min-height: 120px;
 }
 
 .class-chip {
@@ -331,6 +344,14 @@
 
 .dark-mode .practice-btn.primary {
   box-shadow: var(--shadow-strong);
+}
+
+.dark-mode .progress-quick-chart {
+  --dashboard-bar-fill: #93c5fd;
+}
+
+.dark-mode .progress-quick-chart .recharts-text {
+  fill: #f8fafc;
 }
 
 .dark-mode .class-chip,

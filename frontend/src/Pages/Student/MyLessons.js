@@ -232,6 +232,7 @@ function MyLessons({ role }) {
   const [savingProgress, setSavingProgress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [attemptMessage, setAttemptMessage] = useState('');
+  const [lessonView, setLessonView] = useState('todo');
   const [activeFilter, setActiveFilter] = useState('all');
   const [completedFilter, setCompletedFilter] = useState('all');
   const [activeNameFilter, setActiveNameFilter] = useState('');
@@ -830,15 +831,45 @@ function MyLessons({ role }) {
         <div className="data-card">
           <div className="data-header">
             <div>
-              <h3 className="section-title">
-                <span className="section-icon">
-                  <Icon.List className="icon" />
-                </span>
-                To Do
-              </h3>
+              <div className="left-actions">
+                <h3 className="section-title">
+                  <span className="section-icon">
+                    <Icon.List className="icon" />
+                  </span>
+                  Lessons
+                </h3>
+                <div className="toggle-row" role="tablist" aria-label="Lesson view">
+                  <button
+                    type="button"
+                    className={`ghost-btn small ${lessonView === 'todo' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLessonView('todo');
+                      setActivePage(1);
+                    }}
+                    role="tab"
+                    aria-selected={lessonView === 'todo'}
+                  >
+                    To Do
+                  </button>
+                  <button
+                    type="button"
+                    className={`ghost-btn small ${lessonView === 'completed' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLessonView('completed');
+                      setCompletedPage(1);
+                    }}
+                    role="tab"
+                    aria-selected={lessonView === 'completed'}
+                  >
+                    Completed
+                  </button>
+                </div>
+              </div>
               <p className="section-subtitle">
                 {loading
                   ? 'Loading lessons…'
+                  : lessonView === 'completed'
+                  ? `${filteredCompletedRows.length} of ${completedRows.length} lesson${completedRows.length === 1 ? '' : 's'}`
                   : `${filteredActiveRows.length} of ${activeRows.length} lesson${activeRows.length === 1 ? '' : 's'}`}
               </p>
             </div>
@@ -846,333 +877,317 @@ function MyLessons({ role }) {
               <input
                 type="text"
                 className="filter-input"
-                placeholder="Search in To Do"
-                value={activeNameFilter}
+                placeholder={lessonView === 'completed' ? 'Search in Completed' : 'Search in To Do'}
+                value={lessonView === 'completed' ? completedNameFilter : activeNameFilter}
                 onChange={(e) => {
-                  setActiveNameFilter(e.target.value);
-                  setActivePage(1);
+                  if (lessonView === 'completed') {
+                    setCompletedNameFilter(e.target.value);
+                    setCompletedPage(1);
+                  } else {
+                    setActiveNameFilter(e.target.value);
+                    setActivePage(1);
+                  }
                 }}
               />
               <button
                 type="button"
-                className={`ghost-btn small ${activeSortKey === 'name' ? 'active' : ''}`}
-                onClick={() => toggleActiveSort('name')}
+                className={`ghost-btn small ${
+                  lessonView === 'completed'
+                    ? completedSortKey === 'name'
+                      ? 'active'
+                      : ''
+                    : activeSortKey === 'name'
+                    ? 'active'
+                    : ''
+                }`}
+                onClick={() => (lessonView === 'completed' ? toggleCompletedSort('name') : toggleActiveSort('name'))}
               >
-                Name {activeSortKey === 'name' ? (activeSortDir === 'asc' ? '↑' : '↓') : ''}
+                Name{' '}
+                {lessonView === 'completed'
+                  ? completedSortKey === 'name'
+                    ? completedSortDir === 'asc'
+                      ? '↑'
+                      : '↓'
+                    : ''
+                  : activeSortKey === 'name'
+                  ? activeSortDir === 'asc'
+                    ? '↑'
+                    : '↓'
+                  : ''}
               </button>
-              <button
-                type="button"
-                className={`ghost-btn small ${activeSortKey === 'due' ? 'active' : ''}`}
-                onClick={() => toggleActiveSort('due')}
-              >
-                Due date {activeSortKey === 'due' ? (activeSortDir === 'asc' ? '↑' : '↓') : ''}
-              </button>
-              <select
-                className="status-select"
-                value={activeFilter}
-                onChange={(e) => {
-                  setActiveFilter(e.target.value);
-                  setActivePage(1);
-                }}
-              >
-                <option value="all">All statuses</option>
-                <option value="active">Active</option>
-                <option value="late">Late</option>
-              </select>
+              {lessonView === 'completed' ? (
+                <>
+                  <select
+                    className="status-select"
+                    value={completedFilter}
+                    onChange={(e) => {
+                      setCompletedFilter(e.target.value);
+                      setCompletedPage(1);
+                    }}
+                  >
+                    <option value="all">All reviews</option>
+                    <option value="pending">Pending</option>
+                    <option value="reviewed">Reviewed</option>
+                  </select>
+                  <select
+                    className="status-select"
+                    value={completedScoreFilter}
+                    onChange={(e) => {
+                      setCompletedScoreFilter(e.target.value);
+                      setCompletedPage(1);
+                    }}
+                  >
+                    <option value="all">All scores</option>
+                    <option value="high">70% and up</option>
+                    <option value="low">Below 70%</option>
+                    <option value="unscored">Unscored</option>
+                  </select>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className={`ghost-btn small ${activeSortKey === 'due' ? 'active' : ''}`}
+                    onClick={() => toggleActiveSort('due')}
+                  >
+                    Due date {activeSortKey === 'due' ? (activeSortDir === 'asc' ? '↑' : '↓') : ''}
+                  </button>
+                  <select
+                    className="status-select"
+                    value={activeFilter}
+                    onChange={(e) => {
+                      setActiveFilter(e.target.value);
+                      setActivePage(1);
+                    }}
+                  >
+                    <option value="all">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="late">Late</option>
+                  </select>
+                </>
+              )}
             </div>
           </div>
 
           <DataGrid
             loading={loading}
-            emptyMessage="No active lessons."
+            emptyMessage={lessonView === 'completed' ? 'No completed lessons yet.' : 'No active lessons.'}
             className="lessons-grid"
-            columns={[
-              {
-                title: (
-                  <span className="col-title">
-                    <Icon.BookOpen className="col-icon" />
-                    Name
-                  </span>
-                ),
-                width: '1.6fr',
-              },
-              {
-                title: (
-                  <span className="col-title">
-                    <Icon.Calendar className="col-icon" />
-                    Due date
-                  </span>
-                ),
-                align: 'center',
-                width: '1fr',
-              },
-              {
-                title: (
-                  <span className="col-title">
-                    <Icon.Signal className="col-icon" />
-                    Status
-                  </span>
-                ),
-                align: 'center',
-                width: '1fr',
-              },
-              { title: '', align: 'right', width: '0.9fr' },
-            ]}
-            rows={pagedActiveRows.map((lesson) => {
-              const status = lesson.computedStatus;
-              const hasDraft = !!lesson.activeAttempt;
-              return {
-                key: lesson.id,
-                onDoubleClick: () =>
-                  openAttempt(lesson, hasDraft ? lesson.activeAttempt.attemptId : null, false),
-                cells: [
-                  <div className="cell-strong lesson-title">
-                    <span className="lesson-title-icon">
-                      <Icon.BookOpen className="icon" />
-                    </span>
-                    <span>{lesson.title}</span>
-                  </div>,
-                  formatDate(lesson.dueDate),
-                  <div className={`status-pill center ${status.toLowerCase()}`}>{status}</div>,
-                  <div className="table-actions actions-cell">
-                    <button
-                      type="button"
-                      className="primary-btn small"
-                      disabled={loadingAttempt}
-                      onClick={() =>
-                        openAttempt(lesson, hasDraft ? lesson.activeAttempt.attemptId : null, false)
-                      }
-                    >
-                      <span className="btn-icon" aria-hidden="true">
-                        <Icon.Play className="icon" />
-                      </span>
-                      {hasDraft ? 'Continue' : 'Start'}
-                    </button>
-                  </div>,
-                ],
-              };
-            })}
+            columns={
+              lessonView === 'completed'
+                ? [
+                    {
+                      title: (
+                        <span className="col-title">
+                          <Icon.BookOpen className="col-icon" />
+                          Name
+                        </span>
+                      ),
+                      width: '1.6fr',
+                    },
+                    {
+                      title: (
+                        <span className="col-title">
+                          <Icon.Medal className="col-icon" />
+                          Score
+                        </span>
+                      ),
+                      align: 'center',
+                      width: '1fr',
+                    },
+                    {
+                      title: (
+                        <span className="col-title">
+                          <Icon.ClipboardCheck className="col-icon" />
+                          Review
+                        </span>
+                      ),
+                      align: 'center',
+                      width: '1fr',
+                    },
+                    { title: '', align: 'right', width: '0.9fr' },
+                  ]
+                : [
+                    {
+                      title: (
+                        <span className="col-title">
+                          <Icon.BookOpen className="col-icon" />
+                          Name
+                        </span>
+                      ),
+                      width: '1.6fr',
+                    },
+                    {
+                      title: (
+                        <span className="col-title">
+                          <Icon.Calendar className="col-icon" />
+                          Due date
+                        </span>
+                      ),
+                      align: 'center',
+                      width: '1fr',
+                    },
+                    {
+                      title: (
+                        <span className="col-title">
+                          <Icon.Signal className="col-icon" />
+                          Status
+                        </span>
+                      ),
+                      align: 'center',
+                      width: '1fr',
+                    },
+                    { title: '', align: 'right', width: '0.9fr' },
+                  ]
+            }
+            rows={
+              lessonView === 'completed'
+                ? pagedCompletedRows.map((lesson) => {
+                    const latestAttempt = lesson.latestAttempt;
+                    const primaryAttempt = lesson.originalAttempt || latestAttempt;
+                    const retryAttempt = lesson.retryAttempt;
+                    const retryAllowed = lesson.retryAllowed ?? false;
+                    const scoreOutOf = lesson.scoreOutOf || FALLBACK_OUT_OF;
+                    const primaryPercent =
+                      primaryAttempt && typeof primaryAttempt.totalScore === 'number' && scoreOutOf > 0
+                        ? Math.round((primaryAttempt.totalScore / scoreOutOf) * 100)
+                        : null;
+                    const retryPercent =
+                      retryAttempt && typeof retryAttempt.totalScore === 'number' && scoreOutOf > 0
+                        ? Math.round((retryAttempt.totalScore / scoreOutOf) * 100)
+                        : null;
+                    const percentTone =
+                      primaryPercent == null
+                        ? 'neutral'
+                        : primaryPercent >= 70
+                        ? 'good'
+                        : primaryPercent >= 50
+                        ? 'mid'
+                        : 'low';
+
+                    return {
+                      key: lesson.id,
+                      onDoubleClick: latestAttempt
+                        ? () => openAttempt(lesson, latestAttempt?.attemptId, true)
+                        : undefined,
+                      cells: [
+                        <div className="cell-strong lesson-title">
+                          <span className="lesson-title-icon">
+                            <Icon.BookOpen className="icon" />
+                          </span>
+                          <span>{lesson.title}</span>
+                        </div>,
+                        <div className="score-stack center">
+                          <span className={`score-pill ${percentTone}`}>
+                            {primaryPercent != null ? `${primaryPercent}%` : '—'}
+                          </span>
+                          {retryPercent !== null ? (
+                            <div className="muted small-text">Retry: {retryPercent}%</div>
+                          ) : null}
+                        </div>,
+                        <div className="center">
+                          <span
+                            className={`status-pill ${
+                              latestAttempt?.reviewStatus?.toLowerCase() === 'reviewed' ? 'reviewed' : 'pending'
+                            }`}
+                          >
+                            {latestAttempt?.reviewStatus || 'Pending'}
+                          </span>
+                        </div>,
+                        <div className="table-actions gap-small actions-cell">
+                          <button
+                            type="button"
+                            className="ghost-btn small"
+                            disabled={loadingAttempt || !retryAllowed}
+                            onClick={() => openAttempt(lesson)}
+                          >
+                            <span className="btn-icon" aria-hidden="true">
+                              <Icon.Redo className="icon" />
+                            </span>
+                            {retryAllowed ? 'Retry lesson' : 'Retry used'}
+                          </button>
+                          <button
+                            type="button"
+                            className="primary-btn small"
+                            disabled={loadingAttempt || !latestAttempt}
+                            onClick={() => openAttempt(lesson, latestAttempt?.attemptId, true)}
+                          >
+                            <span className="btn-icon" aria-hidden="true">
+                              <Icon.CommentDots className="icon" />
+                            </span>
+                            View feedback
+                          </button>
+                        </div>,
+                      ],
+                    };
+                  })
+                : pagedActiveRows.map((lesson) => {
+                    const status = lesson.computedStatus;
+                    const hasDraft = !!lesson.activeAttempt;
+                    return {
+                      key: lesson.id,
+                      onDoubleClick: () =>
+                        openAttempt(lesson, hasDraft ? lesson.activeAttempt.attemptId : null, false),
+                      cells: [
+                        <div className="cell-strong lesson-title">
+                          <span className="lesson-title-icon">
+                            <Icon.BookOpen className="icon" />
+                          </span>
+                          <span>{lesson.title}</span>
+                        </div>,
+                        formatDate(lesson.dueDate),
+                        <div className={`status-pill center ${status.toLowerCase()}`}>{status}</div>,
+                        <div className="table-actions actions-cell">
+                          <button
+                            type="button"
+                            className="primary-btn small"
+                            disabled={loadingAttempt}
+                            onClick={() =>
+                              openAttempt(lesson, hasDraft ? lesson.activeAttempt.attemptId : null, false)
+                            }
+                          >
+                            <span className="btn-icon" aria-hidden="true">
+                              <Icon.Play className="icon" />
+                            </span>
+                            {hasDraft ? 'Continue' : 'Start'}
+                          </button>
+                        </div>,
+                      ],
+                    };
+                  })
+            }
           />
-          {activeTotalPages > 1 ? (
+          {(lessonView === 'completed' ? completedTotalPages : activeTotalPages) > 1 ? (
             <div className="pagination">
               <button
                 type="button"
                 className="ghost-btn small"
-                onClick={() => setActivePage((prev) => Math.max(1, prev - 1))}
-                disabled={activePage === 1}
+                onClick={() =>
+                  lessonView === 'completed'
+                    ? setCompletedPage((prev) => Math.max(1, prev - 1))
+                    : setActivePage((prev) => Math.max(1, prev - 1))
+                }
+                disabled={lessonView === 'completed' ? completedPage === 1 : activePage === 1}
               >
                 Previous
               </button>
               <span className="page-indicator">
-                Page {activePage} of {activeTotalPages}
+                Page {lessonView === 'completed' ? completedPage : activePage} of{' '}
+                {lessonView === 'completed' ? completedTotalPages : activeTotalPages}
               </span>
               <button
                 type="button"
                 className="ghost-btn small"
-                onClick={() => setActivePage((prev) => Math.min(activeTotalPages, prev + 1))}
-                disabled={activePage === activeTotalPages}
-              >
-                Next
-              </button>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="data-card">
-          <div className="data-header">
-            <div>
-              <h3 className="section-title">
-                <span className="section-icon">
-                  <Icon.CheckCircle className="icon" />
-                </span>
-                Completed
-              </h3>
-              <p className="section-subtitle">
-                {loading
-                  ? 'Loading lessons…'
-                  : `${filteredCompletedRows.length} of ${completedRows.length} lesson${completedRows.length === 1 ? '' : 's'}`}
-              </p>
-            </div>
-            <div className="filter-row">
-              <input
-                type="text"
-                className="filter-input"
-                placeholder="Search in Completed"
-                value={completedNameFilter}
-                onChange={(e) => {
-                  setCompletedNameFilter(e.target.value);
-                  setCompletedPage(1);
-                }}
-              />
-              <button
-                type="button"
-                className={`ghost-btn small ${completedSortKey === 'name' ? 'active' : ''}`}
-                onClick={() => toggleCompletedSort('name')}
-              >
-                Name {completedSortKey === 'name' ? (completedSortDir === 'asc' ? '↑' : '↓') : ''}
-              </button>
-              <select
-                className="status-select"
-                value={completedFilter}
-                onChange={(e) => {
-                  setCompletedFilter(e.target.value);
-                  setCompletedPage(1);
-                }}
-              >
-                <option value="all">All reviews</option>
-                <option value="pending">Pending</option>
-                <option value="reviewed">Reviewed</option>
-              </select>
-              <select
-                className="status-select"
-                value={completedScoreFilter}
-                onChange={(e) => {
-                  setCompletedScoreFilter(e.target.value);
-                  setCompletedPage(1);
-                }}
-              >
-                <option value="all">All scores</option>
-                <option value="high">70% and up</option>
-                <option value="low">Below 70%</option>
-                <option value="unscored">Unscored</option>
-              </select>
-            </div>
-          </div>
-
-          <DataGrid
-            loading={loading}
-            emptyMessage="No completed lessons yet."
-            className="lessons-grid"
-            columns={[
-              {
-                title: (
-                  <span className="col-title">
-                    <Icon.BookOpen className="col-icon" />
-                    Name
-                  </span>
-                ),
-                width: '1.6fr',
-              },
-              {
-                title: (
-                  <span className="col-title">
-                    <Icon.Medal className="col-icon" />
-                    Score
-                  </span>
-                ),
-                align: 'center',
-                width: '1fr',
-              },
-              {
-                title: (
-                  <span className="col-title">
-                    <Icon.ClipboardCheck className="col-icon" />
-                    Review
-                  </span>
-                ),
-                align: 'center',
-                width: '1fr',
-              },
-              { title: '', align: 'right', width: '0.9fr' },
-            ]}
-            rows={pagedCompletedRows.map((lesson) => {
-              const latestAttempt = lesson.latestAttempt;
-              const primaryAttempt = lesson.originalAttempt || latestAttempt;
-              const retryAttempt = lesson.retryAttempt;
-              const retryAllowed = lesson.retryAllowed ?? false;
-              const scoreOutOf = lesson.scoreOutOf || FALLBACK_OUT_OF;
-              const primaryPercent =
-                primaryAttempt && typeof primaryAttempt.totalScore === 'number' && scoreOutOf > 0
-                  ? Math.round((primaryAttempt.totalScore / scoreOutOf) * 100)
-                  : null;
-              const retryPercent =
-                retryAttempt && typeof retryAttempt.totalScore === 'number' && scoreOutOf > 0
-                  ? Math.round((retryAttempt.totalScore / scoreOutOf) * 100)
-                  : null;
-              const percentTone =
-                primaryPercent == null
-                  ? 'neutral'
-                  : primaryPercent >= 70
-                  ? 'good'
-                  : primaryPercent >= 50
-                  ? 'mid'
-                  : 'low';
-
-              return {
-                key: lesson.id,
-                onDoubleClick: latestAttempt
-                  ? () => openAttempt(lesson, latestAttempt?.attemptId, true)
-                  : undefined,
-                cells: [
-                  <div className="cell-strong lesson-title">
-                    <span className="lesson-title-icon">
-                      <Icon.BookOpen className="icon" />
-                    </span>
-                    <span>{lesson.title}</span>
-                  </div>,
-                  <div className="score-stack center">
-                    <span className={`score-pill ${percentTone}`}>
-                      {primaryPercent != null ? `${primaryPercent}%` : '—'}
-                    </span>
-                    {retryPercent !== null ? (
-                      <div className="muted small-text">Retry: {retryPercent}%</div>
-                    ) : null}
-                  </div>,
-                  <div className="center">
-                    <span
-                      className={`status-pill ${
-                        latestAttempt?.reviewStatus?.toLowerCase() === 'reviewed' ? 'reviewed' : 'pending'
-                      }`}
-                    >
-                      {latestAttempt?.reviewStatus || 'Pending'}
-                    </span>
-                  </div>,
-                  <div className="table-actions gap-small actions-cell">
-                    <button
-                      type="button"
-                      className="ghost-btn small"
-                      disabled={loadingAttempt || !retryAllowed}
-                      onClick={() => openAttempt(lesson)}
-                    >
-                      <span className="btn-icon" aria-hidden="true">
-                        <Icon.Redo className="icon" />
-                      </span>
-                      {retryAllowed ? 'Retry lesson' : 'Retry used'}
-                    </button>
-                    <button
-                      type="button"
-                      className="primary-btn small"
-                      disabled={loadingAttempt || !latestAttempt}
-                      onClick={() => openAttempt(lesson, latestAttempt?.attemptId, true)}
-                    >
-                      <span className="btn-icon" aria-hidden="true">
-                        <Icon.CommentDots className="icon" />
-                      </span>
-                      View feedback
-                    </button>
-                  </div>,
-                ],
-              };
-            })}
-          />
-          {completedTotalPages > 1 ? (
-            <div className="pagination">
-              <button
-                type="button"
-                className="ghost-btn small"
-                onClick={() => setCompletedPage((prev) => Math.max(1, prev - 1))}
-                disabled={completedPage === 1}
-              >
-                Previous
-              </button>
-              <span className="page-indicator">
-                Page {completedPage} of {completedTotalPages}
-              </span>
-              <button
-                type="button"
-                className="ghost-btn small"
-                onClick={() => setCompletedPage((prev) => Math.min(completedTotalPages, prev + 1))}
-                disabled={completedPage === completedTotalPages}
+                onClick={() =>
+                  lessonView === 'completed'
+                    ? setCompletedPage((prev) => Math.min(completedTotalPages, prev + 1))
+                    : setActivePage((prev) => Math.min(activeTotalPages, prev + 1))
+                }
+                disabled={
+                  lessonView === 'completed'
+                    ? completedPage === completedTotalPages
+                    : activePage === activeTotalPages
+                }
               >
                 Next
               </button>
