@@ -10,7 +10,7 @@ const countBlanks = (text, fallback = 1) => {
   return matches.length > 0 ? matches.length : Math.max(fallback, 1);
 };
 
-const normalizeQuestions = (rawQuestions = []) =>
+const normaliseQuestions = (rawQuestions = []) =>
   rawQuestions
     .map((q, idx) => ({
       id: q?.id || idx,
@@ -32,7 +32,7 @@ function PracticeCommonErrors({ role }) {
   });
 
   const questions = useMemo(
-    () => normalizeQuestions(sessionData?.questions),
+    () => normaliseQuestions(sessionData?.questions),
     [sessionData],
   );
 

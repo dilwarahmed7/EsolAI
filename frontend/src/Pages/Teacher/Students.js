@@ -105,7 +105,7 @@ function Students({ role }) {
         if (!res.ok) throw new Error((await res.text()) || 'Unable to load students.');
 
         const data = await res.json();
-        const normalized = data.map((s) => {
+        const normalised = data.map((s) => {
           const avgRaw = s.averageScore ?? s.AverageScore ?? s.averageScorePercent ?? s.AverageScorePercent;
           const avgNum = Number(avgRaw);
           const avgRounded = Number.isFinite(avgNum) ? Math.round(avgNum * 10) / 10 : null;
@@ -118,7 +118,7 @@ function Students({ role }) {
           };
         });
 
-        setStudents(normalized);
+        setStudents(normalised);
       } catch (err) {
         console.error(err);
         setError(err.message || 'Failed to load students.');
@@ -183,7 +183,7 @@ function Students({ role }) {
       });
       if (reload.ok) {
         const data = await reload.json();
-        const normalized = data.map((s) => {
+        const normalised = data.map((s) => {
           const avgRaw = s.averageScore ?? s.AverageScore ?? s.averageScorePercent ?? s.AverageScorePercent;
           const avgNum = Number(avgRaw);
           const avgRounded = Number.isFinite(avgNum) ? Math.round(avgNum * 10) / 10 : null;
@@ -195,7 +195,7 @@ function Students({ role }) {
             averageTrend: s.averageTrend ?? s.AverageTrend ?? null,
           };
         });
-        setStudents(normalized);
+        setStudents(normalised);
       }
     } catch (err) {
       console.error(err);

@@ -77,8 +77,8 @@ namespace backend.Controllers
             return Ok(response);
         }
 
-        [HttpGet("personalized")]
-        public async Task<IActionResult> GetPersonalizedQueue()
+        [HttpGet("personalised")]
+        public async Task<IActionResult> GetPersonalisedQueue()
         {
             var userId = GetUserIdFromJwt();
             if (userId == null)
@@ -103,7 +103,7 @@ namespace backend.Controllers
                 .ToListAsync();
 
             if (unresolvedQuestionIds.Count == 0)
-                return Ok(new List<PersonalizedErrorDto>());
+                return Ok(new List<PersonalisedErrorDto>());
 
             var responses = await _context.QuestionResponses
                 .Include(r => r.LessonQuestion)
@@ -142,7 +142,7 @@ namespace backend.Controllers
                     if (firstMiss == null)
                         return null;
 
-                    return new PersonalizedErrorDto
+                    return new PersonalisedErrorDto
                     {
                         QuestionId = question.Id,
                         LessonTitle = firstMiss.LessonAttempt.Lesson.Title,
@@ -166,8 +166,8 @@ namespace backend.Controllers
             return Ok(grouped);
         }
 
-        [HttpPost("personalized/answer")]
-        public async Task<IActionResult> SubmitPersonalizedAnswer([FromBody] PersonalizedAnswerRequest request)
+        [HttpPost("personalised/answer")]
+        public async Task<IActionResult> SubmitPersonalisedAnswer([FromBody] PersonalisedAnswerRequest request)
         {
             if (request == null || request.QuestionId <= 0)
                 return BadRequest("QuestionId is required.");
@@ -202,7 +202,7 @@ namespace backend.Controllers
                 .ToListAsync();
 
             if (relevantResponses.Count == 0)
-                return Forbid("This question is not available for personalized practice.");
+                return Forbid("This question is not available for personalised practice.");
 
             var hasPerfect = question.Type == QuestionType.Reading
                 ? relevantResponses.Any(r => r.IsCorrect == true)
@@ -248,7 +248,7 @@ namespace backend.Controllers
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[Personalized Practice] Correction failed: {ex.Message}");
+                    Console.WriteLine($"[Personalised Practice] Correction failed: {ex.Message}");
                     return StatusCode(500, "Could not score this response. Please try again.");
                 }
             }
@@ -269,7 +269,7 @@ namespace backend.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            return Ok(new PersonalizedAnswerResponse
+            return Ok(new PersonalisedAnswerResponse
             {
                 Correct = correct,
                 Score = score,
@@ -292,36 +292,4 @@ namespace backend.Controllers
         }
     }
 
-    public class BasicAnswerOptionDto
-    {
-        public int Id { get; set; }
-        public string Text { get; set; } = string.Empty;
-    }
-
-    public class PersonalizedErrorDto
-    {
-        public int QuestionId { get; set; }
-        public string LessonTitle { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty;
-        public string? Prompt { get; set; }
-        public string? ReadingSnippet { get; set; }
-        public List<BasicAnswerOptionDto> AnswerOptions { get; set; } = new();
-        public DateTime CreatedAt { get; set; }
-    }
-
-    public class PersonalizedAnswerRequest
-    {
-        public int QuestionId { get; set; }
-        public int? SelectedOptionId { get; set; }
-        public string? ResponseText { get; set; }
-    }
-
-    public class PersonalizedAnswerResponse
-    {
-        public bool Correct { get; set; }
-        public int Score { get; set; }
-        public string Feedback { get; set; } = string.Empty;
-        public string? CorrectedText { get; set; }
-        public List<CorrectionChange> Changes { get; set; } = new();
-    }
 }

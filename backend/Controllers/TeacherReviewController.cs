@@ -1,5 +1,6 @@
 using backend.Data;
 using backend.Models;
+using backend.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -168,16 +169,4 @@ namespace backend.Controllers
         }
     }
 
-    public class CompleteReviewRequest
-    {
-        public List<TeacherReviewResponseDto> Responses { get; set; } = new();
-    }
-
-    public class TeacherReviewResponseDto
-    {
-        public int QuestionResponseId { get; set; }
-        public string? CorrectedText { get; set; }
-        public string? TeacherFeedback { get; set; }
-        public int? TeacherScore { get; set; }
-    }
 }

@@ -30,11 +30,11 @@ function Practice({ role }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [starting, setStarting] = useState('');
-  const [personalized, setPersonalized] = useState([]);
-  const [loadingPersonalized, setLoadingPersonalized] = useState(false);
-  const [personalizedError, setPersonalizedError] = useState('');
-  const [showPersonalized, setShowPersonalized] = useState(false);
-  const [activePersonalizedIndex, setActivePersonalizedIndex] = useState(0);
+  const [personalised, setPersonalised] = useState([]);
+  const [loadingPersonalised, setLoadingPersonalised] = useState(false);
+  const [personalisedError, setPersonalisedError] = useState('');
+  const [showPersonalised, setShowPersonalised] = useState(false);
+  const [activePersonalisedIndex, setActivePersonalisedIndex] = useState(0);
   const [answering, setAnswering] = useState(false);
   const [answerResult, setAnswerResult] = useState(null);
   const [responses, setResponses] = useState({});
@@ -57,7 +57,7 @@ function Practice({ role }) {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-      const current = personalized[activePersonalizedIndex];
+      const current = personalised[activePersonalisedIndex];
       if (!current || current.type !== 'Speaking') return;
       const questionId = current.questionId;
       if (!questionId) return;
@@ -88,13 +88,13 @@ function Practice({ role }) {
     return () => {
       recognition.stop();
     };
-  }, [activePersonalizedIndex, personalized]);
+  }, [activePersonalisedIndex, personalised]);
 
   useEffect(() => {
-    if (listening && personalized[activePersonalizedIndex]?.type !== 'Speaking') {
+    if (listening && personalised[activePersonalisedIndex]?.type !== 'Speaking') {
       stopMic();
     }
-  }, [listening, personalized, activePersonalizedIndex]);
+  }, [listening, personalised, activePersonalisedIndex]);
 
   useEffect(() => {
     const fetchErrorTypes = async () => {
@@ -163,14 +163,14 @@ function Practice({ role }) {
       }
 
       const data = await res.json();
-      const normalized = {
+      const normalised = {
         errorType,
         questions: data?.questions || data?.Questions || [],
         modelUsed: data?.modelUsed || data?.ModelUsed || '',
       };
 
-      sessionStorage.setItem('commonPracticeSession', JSON.stringify(normalized));
-      navigate('/practice/common-errors', { state: normalized });
+      sessionStorage.setItem('commonPracticeSession', JSON.stringify(normalised));
+      navigate('/practice/common-errors', { state: normalised });
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to start practice. Please try again.');
@@ -179,20 +179,20 @@ function Practice({ role }) {
     }
   };
 
-  const loadPersonalized = async () => {
+  const loadPersonalised = async () => {
     if (!token) {
-      setPersonalizedError('Please sign in again to start personalised practice.');
+      setPersonalisedError('Please sign in again to start personalised practice.');
       return;
     }
-    setLoadingPersonalized(true);
-    setPersonalizedError('');
+    setLoadingPersonalised(true);
+    setPersonalisedError('');
     try {
-      const res = await fetch(`${API_BASE}/personalized`, {
+      const res = await fetch(`${API_BASE}/personalised`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error((await res.text()) || 'Unable to load personalised errors.');
       const data = await res.json();
-      const normalized = Array.isArray(data)
+      const normalised = Array.isArray(data)
         ? data.map((q) => {
             const rawType = q.type ?? q.Type;
             const type =
@@ -213,25 +213,25 @@ function Practice({ role }) {
             };
           })
         : [];
-      setPersonalized(normalized);
-      setActivePersonalizedIndex(0);
+      setPersonalised(normalised);
+      setActivePersonalisedIndex(0);
       setAnswerResult(null);
       setResponses({});
     } catch (err) {
       console.error(err);
-      setPersonalized([]);
-      setPersonalizedError(err.message || 'Could not load personalised errors.');
+      setPersonalised([]);
+      setPersonalisedError(err.message || 'Could not load personalised errors.');
     } finally {
-      setLoadingPersonalized(false);
+      setLoadingPersonalised(false);
     }
   };
 
-  const startPersonalized = () => {
-    setShowPersonalized(true);
-    loadPersonalized();
+  const startPersonalised = () => {
+    setShowPersonalised(true);
+    loadPersonalised();
   };
 
-  const currentPersonalized = personalized[activePersonalizedIndex] || null;
+  const currentPersonalised = personalised[activePersonalisedIndex] || null;
 
   const updateResponse = (questionId, payload) => {
     setResponses((prev) => ({
@@ -246,7 +246,7 @@ function Practice({ role }) {
   useEffect(() => {
     setAnswerResult(null);
     setMicError('');
-  }, [activePersonalizedIndex]);
+  }, [activePersonalisedIndex]);
 
   const stopMic = () => {
     if (recognitionRef.current && listening) {
@@ -261,7 +261,7 @@ function Practice({ role }) {
       return;
     }
 
-    const current = personalized[activePersonalizedIndex];
+    const current = personalised[activePersonalisedIndex];
     if (!current || current.type !== 'Speaking') {
       setMicError('Mic is only available for speaking questions.');
       return;
@@ -281,9 +281,9 @@ function Practice({ role }) {
     }
   };
 
-  const submitPersonalizedAnswer = async () => {
-    if (!currentPersonalized) return;
-    const { questionId, type } = currentPersonalized;
+  const submitPersonalisedAnswer = async () => {
+    if (!currentPersonalised) return;
+    const { questionId, type } = currentPersonalised;
     const respState = responses[questionId] || {};
 
     if (type === 'Reading' && !respState.selectedOptionId) {
@@ -299,7 +299,7 @@ function Practice({ role }) {
     setAnswerResult(null);
 
     try {
-      const res = await fetch(`${API_BASE}/personalized/answer`, {
+      const res = await fetch(`${API_BASE}/personalised/answer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -335,39 +335,39 @@ function Practice({ role }) {
     }
   };
 
-  const closePersonalized = () => {
-    setShowPersonalized(false);
+  const closePersonalised = () => {
+    setShowPersonalised(false);
     setAnswerResult(null);
     stopMic();
   };
 
-  const goToNextPersonalized = () => {
+  const goToNextPersonalised = () => {
     stopMic();
-    setPersonalized((prevList) => {
+    setPersonalised((prevList) => {
       if (prevList.length === 0) return prevList;
-      const current = prevList[activePersonalizedIndex];
+      const current = prevList[activePersonalisedIndex];
       if (!current) return prevList;
 
       const isCleared = Boolean(answerResult?.success);
       const nextList = [...prevList];
-      nextList.splice(activePersonalizedIndex, 1);
+      nextList.splice(activePersonalisedIndex, 1);
 
       if (!isCleared) {
         nextList.push(current);
       }
 
       const maxIndex = Math.max(nextList.length - 1, 0);
-      const nextIndex = Math.min(activePersonalizedIndex, maxIndex);
-      setActivePersonalizedIndex(nextIndex);
+      const nextIndex = Math.min(activePersonalisedIndex, maxIndex);
+      setActivePersonalisedIndex(nextIndex);
       setAnswerResult(null);
       setMicError('');
       return nextList;
     });
   };
 
-  const goToPrevPersonalized = () => {
+  const goToPrevPersonalised = () => {
     stopMic();
-    setActivePersonalizedIndex((prev) => Math.max(prev - 1, 0));
+    setActivePersonalisedIndex((prev) => Math.max(prev - 1, 0));
   };
 
   return (
@@ -385,7 +385,7 @@ function Practice({ role }) {
               icon: <Icon.List className="mini-icon" />,
             },
             {
-              label: showPersonalized ? `${personalized.length} personalised items` : 'Personalised queue ready',
+              label: showPersonalised ? `${personalised.length} personalised items` : 'Personalised queue ready',
               tone: 'ghost',
               icon: <Icon.ClipboardList className="mini-icon" />,
             },
@@ -440,9 +440,9 @@ function Practice({ role }) {
                   Work through your oldest reviewed mistakes, one at a time.
                 </p>
               </div>
-              {loadingPersonalized ? <span className="pill muted">Loading…</span> : null}
+              {loadingPersonalised ? <span className="pill muted">Loading…</span> : null}
             </header>
-            {personalizedError ? <div className="practice-error">{personalizedError}</div> : null}
+            {personalisedError ? <div className="practice-error">{personalisedError}</div> : null}
             {micError ? <div className="practice-error">{micError}</div> : null}
             <div className="card-grid">
               <div className="practice-card">
@@ -452,10 +452,10 @@ function Practice({ role }) {
                   <button
                     className="card-button"
                     type="button"
-                    onClick={startPersonalized}
-                    disabled={loadingPersonalized}
+                    onClick={startPersonalised}
+                    disabled={loadingPersonalised}
                   >
-                    {loadingPersonalized ? 'Loading…' : 'Practice personalised errors'}
+                    {loadingPersonalised ? 'Loading…' : 'Practice personalised errors'}
                   </button>
                 </div>
               </div>
@@ -464,8 +464,8 @@ function Practice({ role }) {
         </div>
       </div>
 
-      {showPersonalized ? (
-        <div className="practice-modal-backdrop" onClick={(e) => e.target === e.currentTarget && !answering && closePersonalized()}>
+      {showPersonalised ? (
+        <div className="practice-modal-backdrop" onClick={(e) => e.target === e.currentTarget && !answering && closePersonalised()}>
           <div className="practice-modal">
             <div className="modal-header">
               <div>
@@ -475,50 +475,50 @@ function Practice({ role }) {
                   Oldest unresolved errors first. Teacher-reviewed only.
                 </p>
               </div>
-              <button type="button" className="ghost-button" onClick={closePersonalized} disabled={answering}>
+              <button type="button" className="ghost-button" onClick={closePersonalised} disabled={answering}>
                 Close
               </button>
             </div>
 
-            {loadingPersonalized ? (
+            {loadingPersonalised ? (
               <div className="empty-state">Loading your questions…</div>
-            ) : personalized.length === 0 ? (
+            ) : personalised.length === 0 ? (
               <div className="empty-state">No personalised errors to practice right now.</div>
             ) : (
-              currentPersonalized && (
-                <div className="personalized-card">
-                  <div className="personalized-meta">
-                    <span className="pill muted">{currentPersonalized.lessonTitle || 'Lesson'}</span>
-                    <span className="pill muted">{currentPersonalized.type}</span>
-                    {personalized.length > 0 ? (
+              currentPersonalised && (
+                <div className="personalised-card">
+                  <div className="personalised-meta">
+                    <span className="pill muted">{currentPersonalised.lessonTitle || 'Lesson'}</span>
+                    <span className="pill muted">{currentPersonalised.type}</span>
+                    {personalised.length > 0 ? (
                       <span className="pill muted">
-                        {Math.min(activePersonalizedIndex + 1, personalized.length)} of {personalized.length} remaining
+                        {Math.min(activePersonalisedIndex + 1, personalised.length)} of {personalised.length} remaining
                       </span>
                     ) : null}
                   </div>
-                  <h4>{currentPersonalized.prompt}</h4>
-                  {currentPersonalized.type === 'Reading' ? (
+                  <h4>{currentPersonalised.prompt}</h4>
+                  {currentPersonalised.type === 'Reading' ? (
                     <>
-                      <p className="reading-snippet">{currentPersonalized.readingSnippet}</p>
+                      <p className="reading-snippet">{currentPersonalised.readingSnippet}</p>
                       <div className="options-list">
-                        {currentPersonalized.answerOptions.map((opt) => (
+                        {currentPersonalised.answerOptions.map((opt) => (
                           <label
                             key={opt.id || opt.Id}
                             className={`option-row ${
-                              (responses[currentPersonalized.questionId]?.selectedOptionId || null) === (opt.id || opt.Id)
+                              (responses[currentPersonalised.questionId]?.selectedOptionId || null) === (opt.id || opt.Id)
                                 ? 'selected'
                                 : ''
                             }`}
                           >
                             <input
                               type="radio"
-                              name={`practice-${currentPersonalized.questionId}`}
+                              name={`practice-${currentPersonalised.questionId}`}
                               checked={
-                                (responses[currentPersonalized.questionId]?.selectedOptionId || null) ===
+                                (responses[currentPersonalised.questionId]?.selectedOptionId || null) ===
                                 (opt.id || opt.Id)
                               }
                               onChange={() =>
-                                updateResponse(currentPersonalized.questionId, {
+                                updateResponse(currentPersonalised.questionId, {
                                   selectedOptionId: opt.id || opt.Id,
                                 })
                               }
@@ -532,14 +532,14 @@ function Practice({ role }) {
                     <div className="text-response">
                       <textarea
                         rows={4}
-                        value={responses[currentPersonalized.questionId]?.responseText || ''}
+                        value={responses[currentPersonalised.questionId]?.responseText || ''}
                         onChange={(e) =>
-                          updateResponse(currentPersonalized.questionId, { responseText: e.target.value })
+                          updateResponse(currentPersonalised.questionId, { responseText: e.target.value })
                         }
                         placeholder="Type your response"
                         disabled={answering}
                       />
-                      {currentPersonalized.type === 'Speaking' ? (
+                      {currentPersonalised.type === 'Speaking' ? (
                         <button
                           type="button"
                           className={`ghost-button mic-btn ${listening ? 'active' : ''}`}
@@ -553,25 +553,25 @@ function Practice({ role }) {
                     </div>
                   )}
 
-                  <div className="personalized-actions">
-                    <button type="button" className="card-button" onClick={submitPersonalizedAnswer} disabled={answering}>
+                  <div className="personalised-actions">
+                    <button type="button" className="card-button" onClick={submitPersonalisedAnswer} disabled={answering}>
                       {answering ? 'Checking…' : 'Check answer'}
                     </button>
-                    {personalized.length > 1 || answerResult ? (
+                    {personalised.length > 1 || answerResult ? (
                       <>
                         <button
                           type="button"
                           className="ghost-button"
-                          onClick={goToPrevPersonalized}
-                          disabled={answering || activePersonalizedIndex === 0}
+                          onClick={goToPrevPersonalised}
+                          disabled={answering || activePersonalisedIndex === 0}
                         >
                           Previous
                         </button>
                         <button
                           type="button"
                           className="ghost-button"
-                          onClick={goToNextPersonalized}
-                          disabled={answering || personalized.length === 0}
+                          onClick={goToNextPersonalised}
+                          disabled={answering || personalised.length === 0}
                         >
                           {answerResult?.success ? 'Next' : 'Skip to next'}
                         </button>
@@ -584,7 +584,7 @@ function Practice({ role }) {
                       <div>
                         <div className="score-title">{answerResult.success ? 'Cleared' : 'Keep practicing'}</div>
                         <div className="score-value">
-                          {currentPersonalized?.type === 'Reading'
+                          {currentPersonalised?.type === 'Reading'
                             ? answerResult.success
                               ? 'Correct!'
                               : 'Incorrect'

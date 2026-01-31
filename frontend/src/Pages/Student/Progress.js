@@ -79,7 +79,7 @@ const getAndUpdateDailyStreak = () => {
   return 1;
 };
 
-const normalizeLesson = (l) => ({
+const normaliseLesson = (l) => ({
   ...l,
   dueDate: l.dueDate ?? l.DueDate ?? null,
   updatedAt: l.updatedAt ?? l.UpdatedAt ?? null,
@@ -116,8 +116,8 @@ function Progress({ role }) {
         if (!res.ok) throw new Error(`Lessons request failed: ${res.status}`);
 
         const data = await res.json();
-        const normalized = Array.isArray(data) ? data.map(normalizeLesson) : [];
-        setLessons(normalized);
+        const normalised = Array.isArray(data) ? data.map(normaliseLesson) : [];
+        setLessons(normalised);
       } catch (err) {
         console.error(err);
         setLessons([]);

@@ -9,7 +9,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using BCrypt.Net;
 
 namespace backend.Controllers
 {
@@ -133,8 +132,8 @@ namespace backend.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var normalized = dto.Email.Trim().ToLowerInvariant();
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalized);
+            var normalised = dto.Email.Trim().ToLowerInvariant();
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalised);
 
             var token = GenerateResetToken();
             if (user != null)

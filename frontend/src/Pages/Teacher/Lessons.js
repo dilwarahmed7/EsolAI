@@ -67,7 +67,7 @@ function Lessons({ role }) {
   const [activeMenu, setActiveMenu] = useState(null);
   const menuRefs = useRef({});
 
-  const normalizeDate = (dateStr) => {
+  const normaliseDate = (dateStr) => {
     if (!dateStr) return null;
     // Preserve local date but send as ISO
     return new Date(`${dateStr}T00:00:00`).toISOString();
@@ -179,7 +179,7 @@ function Lessons({ role }) {
       const data = await res.json();
       const questionsRaw = data.Questions || data.questions || [];
 
-      const normalizeType = (q) => {
+      const normaliseType = (q) => {
         const raw = q.Type ?? q.type;
         if (typeof raw === 'string') return raw;
         if (raw === 0) return 'Reading';
@@ -187,11 +187,11 @@ function Lessons({ role }) {
         if (raw === 2) return 'Speaking';
         return '';
       };
-      const normalizeOrder = (q) => Number(q.Order ?? q.order ?? 0);
+      const normaliseOrder = (q) => Number(q.Order ?? q.order ?? 0);
 
       const reading = questionsRaw
-        .filter((q) => normalizeType(q) === 'Reading')
-        .sort((a, b) => normalizeOrder(a) - normalizeOrder(b))
+        .filter((q) => normaliseType(q) === 'Reading')
+        .sort((a, b) => normaliseOrder(a) - normaliseOrder(b))
         .map((q) => {
           const opts = (q.AnswerOptions || q.answerOptions || []).map((o) => ({
             text: o.Text || o.text || '',
@@ -207,8 +207,8 @@ function Lessons({ role }) {
 
       while (reading.length < 2) reading.push(createInitialReading());
 
-      const writing = questionsRaw.find((q) => normalizeType(q) === 'Writing');
-      const speaking = questionsRaw.find((q) => normalizeType(q) === 'Speaking');
+      const writing = questionsRaw.find((q) => normaliseType(q) === 'Writing');
+      const speaking = questionsRaw.find((q) => normaliseType(q) === 'Speaking');
 
       setForm({
         title: data.Title || data.title || '',
@@ -372,7 +372,7 @@ function Lessons({ role }) {
 
     const lessonPayload = {
       title: form.title.trim(),
-      dueDate: normalizeDate(form.dueDate),
+      dueDate: normaliseDate(form.dueDate),
     };
 
     try {

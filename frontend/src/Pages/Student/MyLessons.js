@@ -16,7 +16,7 @@ const formatDate = (raw) => {
   return d.toLocaleDateString();
 };
 
-const normalizeLesson = (lesson) => {
+const normaliseLesson = (lesson) => {
   const scoreOutOf = lesson.scoreOutOf || lesson.ScoreOutOf || FALLBACK_OUT_OF;
   const active = lesson.activeAttempt || lesson.ActiveAttempt;
   const latest = lesson.latestAttempt || lesson.LatestAttempt;
@@ -24,7 +24,7 @@ const normalizeLesson = (lesson) => {
   const retry = lesson.retryAttempt || lesson.RetryAttempt;
   const retryAllowed = lesson.retryAllowed ?? lesson.RetryAllowed ?? false;
 
-  const normalizeAttempt = (raw) => {
+  const normaliseAttempt = (raw) => {
     if (!raw) return null;
     return {
       attemptId: raw.attemptId || raw.AttemptId,
@@ -46,15 +46,15 @@ const normalizeLesson = (lesson) => {
     status: lesson.status || lesson.Status,
     scoreOutOf,
     retryAllowed,
-    originalAttempt: normalizeAttempt(original),
-    retryAttempt: normalizeAttempt(retry),
+    originalAttempt: normaliseAttempt(original),
+    retryAttempt: normaliseAttempt(retry),
     activeAttempt: active
       ? {
           attemptId: active.attemptId || active.AttemptId,
           startedAt: active.startedAt || active.StartedAt,
         }
       : null,
-    latestAttempt: normalizeAttempt(latest),
+    latestAttempt: normaliseAttempt(latest),
   };
 };
 
@@ -303,9 +303,8 @@ function MyLessons({ role }) {
       });
       if (!res.ok) return;
       const data = await res.json();
-      setLessons(Array.isArray(data) ? data.map(normalizeLesson) : []);
+      setLessons(Array.isArray(data) ? data.map(normaliseLesson) : []);
     } catch {
-      // ignore refresh errors
     }
   };
 
@@ -326,8 +325,8 @@ function MyLessons({ role }) {
         if (!res.ok) throw new Error((await res.text()) || 'Unable to load lessons.');
 
         const data = await res.json();
-        const normalized = Array.isArray(data) ? data.map(normalizeLesson) : [];
-        setLessons(normalized);
+        const normalised = Array.isArray(data) ? data.map(normaliseLesson) : [];
+        setLessons(normalised);
       } catch (err) {
         console.error(err);
         setError(err.message || 'Failed to load lessons.');
