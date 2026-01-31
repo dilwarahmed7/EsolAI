@@ -23,7 +23,7 @@ const computeStatus = (lesson) => {
   return 'Active';
 };
 
-const normalizeAttempt = (raw) => {
+const normaliseAttempt = (raw) => {
   if (!raw) return null;
   return {
     totalScore: raw.totalScore ?? raw.TotalScore ?? null,
@@ -34,7 +34,7 @@ const normalizeAttempt = (raw) => {
   };
 };
 
-const normalizeLesson = (lesson) => {
+const normaliseLesson = (lesson) => {
   const scoreOutOf = lesson.scoreOutOf || lesson.ScoreOutOf || 22;
   const latest = lesson.latestAttempt || lesson.LatestAttempt;
   const original = lesson.originalAttempt || lesson.OriginalAttempt;
@@ -45,9 +45,9 @@ const normalizeLesson = (lesson) => {
     title: lesson.title || lesson.Title,
     dueDate: lesson.dueDate || lesson.DueDate,
     scoreOutOf,
-    latestAttempt: normalizeAttempt(latest),
-    originalAttempt: normalizeAttempt(original),
-    retryAttempt: normalizeAttempt(retry),
+    latestAttempt: normaliseAttempt(latest),
+    originalAttempt: normaliseAttempt(original),
+    retryAttempt: normaliseAttempt(retry),
     activeAttempt: active
       ? {
           attemptId: active.attemptId || active.AttemptId,
@@ -128,8 +128,8 @@ function StudentDashboard({ role }) {
         });
         if (!res.ok) throw new Error();
         const data = await res.json();
-        const normalized = Array.isArray(data) ? data.map(normalizeLesson) : [];
-        setLessons(normalized);
+        const normalised = Array.isArray(data) ? data.map(normaliseLesson) : [];
+        setLessons(normalised);
       } catch (err) {
         console.error(err);
         setLessons([]);

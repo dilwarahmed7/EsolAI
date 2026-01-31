@@ -204,10 +204,6 @@ function TeacherDashboard({ role }) {
 
       <div className="section-header">
         <h2>Classroom at a glance</h2>
-        <div className="header-badge">
-          <Icon.CheckCircle />
-          Key metrics to keep you on track
-        </div>
       </div>
 
       <div className="stats-grid">

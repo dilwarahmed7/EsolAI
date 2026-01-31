@@ -33,9 +33,6 @@ namespace backend.Controllers
             return await _db.Students.FirstOrDefaultAsync(s => s.UserId == userId);
         }
 
-        // ---------------------------------------------------------
-        // 1) List lessons assigned to the student's class
-        // ---------------------------------------------------------
         [HttpGet]
         public async Task<IActionResult> GetMyLessons()
         {
@@ -119,10 +116,6 @@ namespace backend.Controllers
             return Ok(payload);
         }
 
-        // ---------------------------------------------------------
-        // 2) Get a lesson (content for attempting)
-        //    - Includes MCQ options BUT does not expose IsCorrect
-        // ---------------------------------------------------------
         [HttpGet("{lessonId:int}")]
         public async Task<IActionResult> GetLesson(int lessonId)
         {
@@ -170,9 +163,6 @@ namespace backend.Controllers
             });
         }
 
-        // ---------------------------------------------------------
-        // 3) Start a lesson attempt
-        // ---------------------------------------------------------
         [HttpPost("{lessonId:int}/start")]
         public async Task<IActionResult> StartAttempt(int lessonId)
         {
@@ -247,9 +237,6 @@ namespace backend.Controllers
             });
         }
 
-        // ---------------------------------------------------------
-        // 3b) Save an in-progress attempt (draft)
-        // ---------------------------------------------------------
         [HttpPost("{lessonId:int}/progress")]
         public async Task<IActionResult> SaveProgress(int lessonId, [FromBody] SaveLessonProgressRequest dto)
         {
@@ -326,9 +313,6 @@ namespace backend.Controllers
             });
         }
 
-        // ---------------------------------------------------------
-        // 3c) Fetch attempt with responses/feedback
-        // ---------------------------------------------------------
         [HttpGet("{lessonId:int}/attempts/{attemptId:int}")]
         public async Task<IActionResult> GetAttempt(int lessonId, int attemptId)
         {
@@ -343,13 +327,6 @@ namespace backend.Controllers
             return Ok(BuildAttemptDetail(attempt));
         }
 
-        // ---------------------------------------------------------
-        // 4) Submit an attempt
-        //    - Reading auto marked (1 point each)
-        //    - Writing/Speaking marked by FastAPI (/correct)
-        //    - Creates FeedbackReview rows for writing/speaking
-        //    - Tags StudentErrors
-        // ---------------------------------------------------------
         [HttpPost("{lessonId:int}/submit")]
         public async Task<IActionResult> SubmitAttempt(int lessonId, [FromBody] SubmitLessonRequest dto)
         {
@@ -381,7 +358,6 @@ namespace backend.Controllers
             if (lesson == null)
                 return NotFound("Lesson not found.");
 
-            // Validate response question IDs
             var questionIds = lesson.Questions.Select(q => q.Id).ToHashSet();
             foreach (var r in dto.Responses)
             {
@@ -389,7 +365,6 @@ namespace backend.Controllers
                     return BadRequest($"Response includes invalid LessonQuestionId: {r.LessonQuestionId}");
             }
 
-            // If anything existed (shouldn't), clear it
             if (attempt.Responses.Count > 0)
             {
                 _db.QuestionResponses.RemoveRange(attempt.Responses);
@@ -450,17 +425,13 @@ namespace backend.Controllers
 
                     needsTeacherReview = true;
 
-                    // ---- Call your FastAPI NLP model ----
                     CorrectionResponse nlp;
                     try
                     {
-                        // prompt is optional; you can pass q.Prompt if you want more context in logs
                         nlp = await _correctionClient.CorrectAsync(studentInput: text, prompt: q.Prompt ?? string.Empty, maxLength: 256);
                     }
                     catch (Exception ex)
                     {
-                        // Fail-safe: still store response; mark for review;
-                        // but AI score will be null so teacher can handle it.
                         nlp = new CorrectionResponse
                         {
                             Original = text,
@@ -472,7 +443,6 @@ namespace backend.Controllers
                             HasErrors = false
                         };
 
-                        // OPTIONAL: you could log ex.Message to console
                         Console.WriteLine($"[NLP] Failed: {ex.Message}");
                     }
 
@@ -485,16 +455,12 @@ namespace backend.Controllers
                         LessonQuestionId = q.Id,
                         ResponseText = text,
 
-                        // Final score set after teacher review
                         Score = 0,
 
-                        // Provisional AI score
                         AiScore = aiScore,
                         NeedsReview = true
                     };
 
-                    // Store corrected + simple feedback now.
-                    // If you want, you can later run Gemini to turn changes into nicer feedback.
                     var changesJson = nlp.Changes != null && nlp.Changes.Count > 0
                         ? JsonSerializer.Serialize(nlp.Changes)
                         : null;
@@ -509,20 +475,18 @@ namespace backend.Controllers
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    // If you want to store changes JSON, simplest is append it to AiFeedback for now:
                     if (!string.IsNullOrWhiteSpace(changesJson))
                         resp.FeedbackReview.AiFeedback += $" Changes: {changesJson}";
 
                     attempt.Responses.Add(resp);
 
-                    // Tag as a practice error if not perfect
                     if (hasErrors)
                     {
                         _db.StudentErrors.Add(new StudentError
                         {
                             StudentId = student.Id,
                             QuestionResponse = resp,
-                            ErrorType = q.Type.ToString(), // "Writing" / "Speaking"
+                            ErrorType = q.Type.ToString(),
                             CreatedAt = DateTime.UtcNow,
                             Resolved = false
                         });
@@ -536,11 +500,9 @@ namespace backend.Controllers
 
             attempt.ReadingScore = Math.Clamp(readingScore, 0, 2);
 
-            // Use provisional AI scores as the working score until a teacher reviews.
             attempt.WritingScore = provisionalWriting;
             attempt.SpeakingScore = provisionalSpeaking;
 
-            // Provisional total
             attempt.TotalScore = attempt.ReadingScore + attempt.WritingScore + attempt.SpeakingScore;
 
             attempt.NeedsTeacherReview = needsTeacherReview;
@@ -709,45 +671,4 @@ namespace backend.Controllers
         }
     }
 
-    // ============================================================
-    // DTOs
-    // ============================================================
-
-    public class AnswerOptionPublicDto
-    {
-        public int Id { get; set; }
-        public string Text { get; set; } = string.Empty;
-    }
-
-    public class SubmitLessonRequest
-    {
-        public int AttemptId { get; set; }
-        public List<SubmitQuestionResponseDto> Responses { get; set; } = new();
-    }
-
-    public class SubmitQuestionResponseDto
-    {
-        public int LessonQuestionId { get; set; }
-        public int? SelectedOptionId { get; set; }
-        public string? ResponseText { get; set; }
-    }
-
-    public class SaveLessonProgressRequest
-    {
-        public int AttemptId { get; set; }
-        public List<SubmitQuestionResponseDto> Responses { get; set; } = new();
-    }
-
-    public class LessonAttemptSummaryDto
-    {
-        public int AttemptId { get; set; }
-        public DateTime? SubmittedAt { get; set; }
-        public int ReadingScore { get; set; }
-        public int WritingScore { get; set; }
-        public int SpeakingScore { get; set; }
-        public int TotalScore { get; set; }
-        public bool NeedsTeacherReview { get; set; }
-        public bool TeacherReviewCompleted { get; set; }
-        public string ReviewStatus { get; set; } = "Pending";
-    }
 }

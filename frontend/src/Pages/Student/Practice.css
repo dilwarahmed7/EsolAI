@@ -240,13 +240,13 @@
   margin-bottom: 12px;
 }
 
-.personalized-card {
+.personalised-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.personalized-meta {
+.personalised-meta {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -285,7 +285,7 @@
   background: rgba(59, 130, 246, 0.08);
 }
 
-.personalized-card .option-row input[type='radio'] {
+.personalised-card .option-row input[type='radio'] {
   width: 18px;
   height: 18px;
   margin: 0;
@@ -293,7 +293,7 @@
   flex-shrink: 0;
 }
 
-.personalized-card .option-row span {
+.personalised-card .option-row span {
   flex: 0 1 auto;
   margin-left: 4px;
   font-weight: 600;
@@ -308,7 +308,7 @@
   resize: vertical;
 }
 
-.personalized-actions {
+.personalised-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
