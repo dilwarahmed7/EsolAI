@@ -3,6 +3,7 @@ import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
 import DataGrid from '../../Components/DataGrid';
 import Icon from '../../Components/Icons';
+import { useToast } from '../../Components/ToastProvider';
 import './MyLessons.css';
 
 const API_BASE = 'http://localhost:5144/api/student/lessons';
@@ -219,6 +220,7 @@ const deriveScores = (detail) => {
 
 function MyLessons({ role }) {
   const token = useMemo(() => sessionStorage.getItem('token') || localStorage.getItem('token'), []);
+  const toast = useToast();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -312,6 +314,7 @@ function MyLessons({ role }) {
     const load = async () => {
       if (!token) {
         setError('Please sign in again.');
+        toast.error('Please sign in again.');
         setLoading(false);
         return;
       }
@@ -330,13 +333,14 @@ function MyLessons({ role }) {
       } catch (err) {
         console.error(err);
         setError(err.message || 'Failed to load lessons.');
+        toast.error(err.message || 'Failed to load lessons.');
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [token]);
+  }, [token, toast]);
 
   const rows = lessons.map((lesson) => ({
     ...lesson,
@@ -465,6 +469,7 @@ function MyLessons({ role }) {
     if (!lesson) return;
     if (!token) {
       setError('Please sign in again.');
+      toast.error('Please sign in again.');
       return;
     }
 
@@ -513,6 +518,7 @@ function MyLessons({ role }) {
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to open lesson.');
+      toast.error(err.message || 'Failed to open lesson.');
       closeModal();
     } finally {
       setLoadingAttempt(false);
@@ -568,12 +574,14 @@ function MyLessons({ role }) {
       });
       if (!res.ok) throw new Error((await res.text()) || 'Could not save progress.');
       setAttemptMessage('Progress saved. You can continue later from the lessons list.');
+      toast.success('Progress saved.');
       await fetchAttemptDetail(lessonId, attemptId, false);
       await refreshLessons();
       closeModal();
     } catch (err) {
       console.error(err);
       setAttemptMessage(err.message || 'Failed to save progress.');
+      toast.error(err.message || 'Failed to save progress.');
     } finally {
       setSavingProgress(false);
     }
@@ -598,6 +606,7 @@ function MyLessons({ role }) {
 
     if (missing) {
       setAttemptMessage('Please answer every question before submitting.');
+      toast.info('Please answer every question before submitting.');
       return;
     }
 
@@ -618,10 +627,12 @@ function MyLessons({ role }) {
       setResponses(buildResponseState(data));
       setModalMode('feedback');
       setAttemptMessage('Submitted! Instant feedback is ready below.');
+      toast.success('Lesson submitted successfully.');
       await refreshLessons();
     } catch (err) {
       console.error(err);
       setAttemptMessage(err.message || 'Failed to submit attempt.');
+      toast.error(err.message || 'Failed to submit attempt.');
     } finally {
       setSubmitting(false);
     }

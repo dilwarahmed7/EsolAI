@@ -4,6 +4,7 @@ import PageLayout from '../../Components/PageLayout';
 import DataGrid from '../../Components/DataGrid';
 import Hero from '../../Components/Hero';
 import Icon from '../../Components/Icons';
+import { useToast } from '../../Components/ToastProvider';
 import './Lessons.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher';
@@ -72,6 +73,7 @@ function Lessons({ role }) {
     // Preserve local date but send as ISO
     return new Date(`${dateStr}T00:00:00`).toISOString();
   };
+  const toast = useToast();
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -225,6 +227,7 @@ function Lessons({ role }) {
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to open lesson.');
+      toast.error(err.message || 'Failed to open lesson.');
     } finally {
       setIsSaving(false);
     }
@@ -360,10 +363,12 @@ function Lessons({ role }) {
   const saveLesson = async (publish = false) => {
     if (!token) {
       setError('Please sign in again.');
+      toast.error('Please sign in again.');
       return;
     }
     if (!form.title.trim()) {
       setError('Title is required.');
+      toast.info('Please add a lesson title before saving.', 'Missing required field');
       return;
     }
 
@@ -441,9 +446,17 @@ function Lessons({ role }) {
 
       closeDialog();
       await reloadLessons(selectedClassId);
+      if (publish) {
+        toast.success('Lesson published and assigned to classes.');
+      } else if (editingLessonId) {
+        toast.success('Lesson changes saved.');
+      } else {
+        toast.success('Lesson created successfully.');
+      }
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to save lesson.');
+      toast.error(err.message || 'Failed to save lesson.');
     } finally {
       setIsSaving(false);
     }
@@ -463,9 +476,11 @@ function Lessons({ role }) {
       });
       if (!res.ok) throw new Error((await res.text()) || 'Could not archive lesson.');
       setLessons((prev) => prev.filter((l) => (l.id || l.Id) !== lessonId));
+      toast.success('Lesson archived.');
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to archive lesson.');
+      toast.error(err.message || 'Failed to archive lesson.');
     }
   };
 

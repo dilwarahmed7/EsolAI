@@ -7,6 +7,7 @@ import EditProfile from './Pages/Auth/EditProfile';
 import ForgotPassword from './Pages/Auth/ForgotPassword';
 import ResetPassword from './Pages/Auth/ResetPassword';
 import ScrollToTop from './Components/ScrollToTop';
+import ToastProvider from './Components/ToastProvider';
 
 import StudentDashboard from './Pages/Student/StudentDashboard';
 import MyLessons from './Pages/Student/MyLessons';
@@ -52,8 +53,9 @@ function App() {
 
   return (
     <Router>
-      <ScrollToTop />
-      <Routes>
+      <ToastProvider>
+        <ScrollToTop />
+        <Routes>
         {/* Auth routes */}
         <Route path="/login" element={<Login setRole={setRole} />} />
         <Route path="/register" element={<Register />} />
@@ -85,7 +87,8 @@ function App() {
 
         {/* Redirect any unknown path */}
         <Route path="*" element={<Navigate to={role ? "/" : "/login"} replace />} />
-      </Routes>
+        </Routes>
+      </ToastProvider>
     </Router>
   );
 }
