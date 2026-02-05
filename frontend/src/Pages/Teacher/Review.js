@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
 import Icon from '../../Components/Icons';
+import { useToast } from '../../Components/ToastProvider';
 import './Review.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher/reviews';
@@ -47,6 +48,7 @@ function Review({ role }) {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewForm, setReviewForm] = useState({});
   const [hiddenChanges, setHiddenChanges] = useState({});
+  const toast = useToast();
 
   const loadReviewQueue = useCallback(async () => {
     if (!token) return;
@@ -86,10 +88,11 @@ function Review({ role }) {
   } catch (err) {
     console.error(err);
     setReviewError(err.message || 'Failed to load review queue.');
+    toast.error(err.message || 'Failed to load review queue.');
     } finally {
       setReviewLoading(false);
     }
-  }, [token]);
+  }, [token, toast]);
 
   useEffect(() => {
     loadReviewQueue();
@@ -143,9 +146,11 @@ function Review({ role }) {
       if (!res.ok) throw new Error((await res.text()) || 'Failed to submit review.');
 
       await loadReviewQueue();
+      toast.success('Review submitted.');
     } catch (err) {
       console.error(err);
       setReviewError(err.message || 'Could not complete review.');
+      toast.error(err.message || 'Could not complete review.');
     } finally {
       setReviewSaving(false);
     }

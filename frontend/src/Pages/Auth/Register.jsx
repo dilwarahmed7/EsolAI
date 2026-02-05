@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../Components/ToastProvider";
 import "./Register.css";
 
 const Register = () => {
@@ -52,6 +53,7 @@ const Register = () => {
   const levelOptions = useMemo(() => ["A1", "A2", "B1", "B2", "C1", "C2"], []);
 
   const navigate = useNavigate();
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,15 +73,15 @@ const Register = () => {
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        alert(error);
+        const errorText = await res.text().catch(() => "");
+        toast.error(errorText || "Registration failed.");
       } else {
-        alert("User registered successfully!");
+        toast.success("User registered successfully!");
         navigate("/login");
       }
     } catch (err) {
       console.error(err);
-      alert("Something went wrong.");
+      toast.error("Something went wrong.");
     }
   };
 

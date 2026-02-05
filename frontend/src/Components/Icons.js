@@ -29,7 +29,10 @@ import {
   FaPlus,
   FaSun,
   FaMoon,
-  FaFire
+  FaFire,
+  FaInfoCircle,
+  FaTimes,
+  FaExclamationCircle
 } from 'react-icons/fa';
 
 const Icon = {
@@ -63,7 +66,10 @@ const Icon = {
   Plus: FaPlus,
   Sun: FaSun,
   Moon: FaMoon,
-  Fire: FaFire
+  Fire: FaFire,
+  Info: FaInfoCircle,
+  X: FaTimes,
+  AlertCircle: FaExclamationCircle
 };
 
 export default Icon;
