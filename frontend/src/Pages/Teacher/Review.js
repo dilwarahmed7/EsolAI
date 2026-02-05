@@ -7,6 +7,12 @@ import './Review.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher/reviews';
 const HIDE_CHANGES_MARKER = '[HIDE_AI_CHANGES]';
+const HIDE_CHANGES_REGEX = /\[\s*HIDE[\s_-]*AI[\s_-]*CHANGES\s*\]/gi;
+
+const feedbackHasHideMarker = (text) =>
+  typeof text === 'string' && /\[\s*HIDE[\s_-]*AI[\s_-]*CHANGES\s*\]/i.test(text);
+
+const stripHideMarker = (text) => (typeof text === 'string' ? text.replace(HIDE_CHANGES_REGEX, '').trim() : '');
 
 const parseChangesFromFeedback = (aiFeedback) => {
   if (!aiFeedback || typeof aiFeedback !== 'string') return [];
@@ -28,8 +34,8 @@ const buildReviewState = (item) => {
   if (!item || !item.responses) return { form, hidden };
   item.responses.forEach((resp) => {
     const rawFeedback = resp.teacherFeedback || '';
-    const hide = rawFeedback.includes(HIDE_CHANGES_MARKER);
-    const cleanedFeedback = rawFeedback.replace(HIDE_CHANGES_MARKER, '').trim();
+    const hide = feedbackHasHideMarker(rawFeedback);
+    const cleanedFeedback = stripHideMarker(rawFeedback);
     form[resp.questionResponseId] = {
       correctedText: resp.aiCorrections || '',
       teacherFeedback: cleanedFeedback,
