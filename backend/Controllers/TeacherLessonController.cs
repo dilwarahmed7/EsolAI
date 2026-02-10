@@ -82,6 +82,7 @@ namespace backend.Controllers
                     l.Title,
                     Status = l.Status.ToString(),
                     l.DueDate,
+                    l.CreatedAt,
                     l.UpdatedAt,
                     Classes = l.Assignments
                         .Select(a => new

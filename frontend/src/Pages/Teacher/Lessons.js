@@ -61,8 +61,8 @@ function Lessons({ role }) {
   const [editingLessonId, setEditingLessonId] = useState(null);
 
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortKey, setSortKey] = useState('name');
-  const [sortDir, setSortDir] = useState('asc');
+  const [sortKey, setSortKey] = useState('created');
+  const [sortDir, setSortDir] = useState('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [activeMenu, setActiveMenu] = useState(null);
@@ -517,6 +517,17 @@ function Lessons({ role }) {
         if (aTime === bTime) return 0;
         return aTime > bTime ? dir : -dir;
       }
+      if (sortKey === 'created') {
+        const aCreated = a.createdAt || a.CreatedAt;
+        const bCreated = b.createdAt || b.CreatedAt;
+        const aTime = aCreated ? new Date(aCreated).getTime() : null;
+        const bTime = bCreated ? new Date(bCreated).getTime() : null;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+        if (aTime === bTime) return 0;
+        return aTime > bTime ? dir : -dir;
+      }
       return 0;
     });
 
@@ -550,7 +561,7 @@ function Lessons({ role }) {
       setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir('asc');
+      setSortDir(key === 'created' ? 'desc' : 'asc');
     }
     setPage(1);
   };
@@ -640,6 +651,13 @@ function Lessons({ role }) {
                 onClick={() => toggleSort('name')}
               >
                 Name {sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <button
+                type="button"
+                className={`ghost-btn small ${sortKey === 'created' ? 'active' : ''}`}
+                onClick={() => toggleSort('created')}
+              >
+                Creation date {sortKey === 'created' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </button>
               <button
                 type="button"
