@@ -61,7 +61,7 @@ function Lessons({ role }) {
   const [editingLessonId, setEditingLessonId] = useState(null);
 
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortKey, setSortKey] = useState('name'); // name | due
+  const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -70,7 +70,6 @@ function Lessons({ role }) {
 
   const normaliseDate = (dateStr) => {
     if (!dateStr) return null;
-    // Preserve local date but send as ISO
     return new Date(`${dateStr}T00:00:00`).toISOString();
   };
   const toast = useToast();
