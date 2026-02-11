@@ -370,6 +370,11 @@ function Lessons({ role }) {
       toast.info('Please add a lesson title before saving.', 'Missing required field');
       return;
     }
+    if (!form.dueDate) {
+      setError('Due date is required.');
+      toast.info('Please add a due date before saving.', 'Missing required field');
+      return;
+    }
 
     setIsSaving(true);
     setError('');
@@ -849,6 +854,7 @@ function Lessons({ role }) {
                   type="date"
                   value={form.dueDate}
                   onChange={(e) => setForm((prev) => ({ ...prev, dueDate: e.target.value }))}
+                  required
                 />
               </div>
 

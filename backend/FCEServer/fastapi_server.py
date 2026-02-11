@@ -6,6 +6,8 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import re
 import difflib
 import os
+import joblib
+from huggingface_hub import snapshot_download
 
 # =========================
 # Configuration
@@ -28,7 +30,34 @@ class Config:
         "Output only the corrected text."
     )
 
+    ERROR_TAGGER_REPO = os.environ.get(
+        "FCE_ERROR_TAGGER_REPO",
+        "dilwarahmed/fce-error-tagger"
+    )
+    ERROR_TAGGER_FILE = "error_type_classifier.joblib"
+    ERROR_TAGGER_REPO_TYPE = "model"
+
+
 config = Config()
+
+ARTICLES = {"a", "an", "the"}
+
+MICRO_FEEDBACK = {
+    "agreement/plural": (
+        "Check agreement (subject–verb and singular/plural nouns). "
+        "For 3rd person singular, use 'does/has/is' and add -s where needed."
+    ),
+    "articles/determiners": "Check articles and determiners (a/an/the/your). Use them when needed and remove extra ones.",
+    "verb tense/form": "Check verb tense and verb form (e.g., past vs present, infinitive vs -ing).",
+    "prepositions": "Check the preposition choice (e.g., 'in July' not 'on July').",
+    "spelling": "Fix spelling mistakes.",
+    "word choice/form": "Use the correct word or word form for the meaning.",
+    "missing word": "A word is missing—add the word needed for a complete/grammatical phrase.",
+    "unnecessary word": "Remove extra words that aren’t needed.",
+    "punctuation": "Fix punctuation (commas, full stops, capitalization).",
+    "word order": "Adjust word order to match natural English structure.",
+    "other": "Review this part for grammar/usage.",
+}
 
 # =========================
 # Request / Response Models
@@ -79,18 +108,26 @@ class ModelManager:
         self.loaded = False
         self.model_ref = config.MODEL_REF
 
+        self.error_clf = None
+        self.error_clf_loaded = False
+        self.error_clf_effective_path = None
+        self.error_clf_repo_dir = None
+
     def load_model(self):
         """
-        Loads from Hugging Face Hub OR local path.
-        - If config.MODEL_REF exists on disk -> load locally
-        - Else -> treat it as a HF Hub repo id
+        Load:
+          1) Correction model (HF or local, controlled by MODEL_REF)
+          2) Error-type classifier (ALWAYS from HF repo snapshot)
         """
-        model_ref = self.model_ref
+        self._load_correction_model()
+        self._load_error_classifier_from_hf()
 
+    def _load_correction_model(self):
+        model_ref = self.model_ref
         is_local = os.path.exists(model_ref)
 
         load_kwargs = {}
-        if not is_local and config.HF_TOKEN:
+        if (not is_local) and config.HF_TOKEN:
             load_kwargs["token"] = config.HF_TOKEN
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_ref, **load_kwargs)
@@ -99,6 +136,34 @@ class ModelManager:
         self.model.to(self.device)
         self.model.eval()
         self.loaded = True
+
+    def _load_error_classifier_from_hf(self):
+        self.error_clf = None
+        self.error_clf_loaded = False
+        self.error_clf_effective_path = None
+        self.error_clf_repo_dir = None
+
+        snap_kwargs = {"repo_type": config.ERROR_TAGGER_REPO_TYPE}
+        if config.HF_TOKEN:
+            snap_kwargs["token"] = config.HF_TOKEN
+
+        repo_dir = snapshot_download(
+            repo_id=config.ERROR_TAGGER_REPO,
+            **snap_kwargs
+        )
+        self.error_clf_repo_dir = repo_dir
+
+        clf_path = os.path.join(repo_dir, config.ERROR_TAGGER_FILE)
+        if not os.path.exists(clf_path):
+            raise FileNotFoundError(
+                f"'{config.ERROR_TAGGER_FILE}' not found in HF repo snapshot: {repo_dir}. "
+                f"Make sure you uploaded it to {config.ERROR_TAGGER_REPO}."
+            )
+
+        self.error_clf = joblib.load(clf_path)
+        self.error_clf_loaded = True
+        self.error_clf_effective_path = clf_path
+        print(f"✓ Loaded error classifier (HF): {clf_path}")
 
 
 model_manager = ModelManager()
@@ -115,7 +180,50 @@ async def startup_event():
 # =========================
 
 def _wp_tokenize(text: str):
-    return re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
+    return re.findall(r"[A-Za-z]+(?:'[A-Za-z]+)?|\d+|[^\w\s]", text)
+
+
+def _micro_feedback_for(error_type: str) -> str:
+    return MICRO_FEEDBACK.get(error_type, MICRO_FEEDBACK["other"])
+
+
+def _normalize_pair_for_clf(frm, to) -> str:
+    frm = (frm or "").strip()
+    to = (to or "").strip()
+    return f"INC: {frm} || COR: {to}"
+
+
+def _predict_error_type_heuristic(change: dict) -> str:
+    frm_raw = change.get("from")
+    to_raw = change.get("to")
+
+    frm = (frm_raw or "").strip().lower() if frm_raw else ""
+    to = (to_raw or "").strip().lower() if to_raw else ""
+
+    if change["type"] == "added" and to in ARTICLES:
+        return "articles/determiners"
+
+    if change["type"] == "replaced" and frm and to:
+        if frm + "s" == to or frm + "es" == to or (frm.endswith("y") and frm[:-1] + "ies" == to):
+            return "agreement/plural"
+
+    if change["type"] == "added":
+        return "missing word"
+    if change["type"] == "deleted":
+        return "unnecessary word"
+
+    return "other"
+
+
+def _predict_error_type(change: dict) -> str:
+    if model_manager.error_clf_loaded and model_manager.error_clf is not None:
+        try:
+            x = _normalize_pair_for_clf(change.get("from"), change.get("to"))
+            return model_manager.error_clf.predict([x])[0]
+        except Exception:
+            pass
+
+    return _predict_error_type_heuristic(change)
 
 
 def identify_changes(original: str, corrected: str):
@@ -133,13 +241,23 @@ def identify_changes(original: str, corrected: str):
         corrected_segment = " ".join(c_tokens[j1:j2]).replace(" ,", ",").replace(" .", ".")
 
         if tag == "replace":
-            changes.append({"type": "replaced", "from": original_segment, "to": corrected_segment})
+            change = {"type": "replaced", "from": original_segment, "to": corrected_segment}
         elif tag == "delete":
-            changes.append({"type": "deleted", "from": original_segment, "to": None})
+            change = {"type": "deleted", "from": original_segment, "to": None}
         elif tag == "insert":
-            changes.append({"type": "added", "from": None, "to": corrected_segment})
+            change = {"type": "added", "from": None, "to": corrected_segment}
+        else:
+            continue
 
-    return changes[:50]
+        error_type = _predict_error_type(change)
+        change["error_type"] = error_type
+        change["micro_feedback"] = _micro_feedback_for(error_type)
+
+        changes.append(change)
+        if len(changes) >= 50:
+            break
+
+    return changes
 
 
 def correct_text(student_input: str, prompt: str = "", max_length: int = config.DEFAULT_MAX_NEW_TOKENS):
@@ -166,10 +284,7 @@ def correct_text(student_input: str, prompt: str = "", max_length: int = config.
             early_stopping=True,
         )
 
-    corrected = model_manager.tokenizer.decode(
-        outputs[0],
-        skip_special_tokens=True
-    ).strip()
+    corrected = model_manager.tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
 
     changes = identify_changes(student_input, corrected)
     num_errors = len(changes)
@@ -196,6 +311,11 @@ async def root():
         "model_loaded": model_manager.loaded,
         "device": model_manager.device,
         "model_ref": model_manager.model_ref,
+        "error_classifier_loaded": model_manager.error_clf_loaded,
+        "error_classifier_repo": config.ERROR_TAGGER_REPO,
+        "error_classifier_file": config.ERROR_TAGGER_FILE,
+        "error_classifier_effective_path": model_manager.error_clf_effective_path,
+        "error_classifier_repo_dir": model_manager.error_clf_repo_dir,
     }
 
 
@@ -226,10 +346,4 @@ async def correct(request: CorrectionRequest):
 
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

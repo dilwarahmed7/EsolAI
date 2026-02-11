@@ -820,6 +820,20 @@ function MyLessons({ role }) {
                         <strong>{c.to || c.To || ''}</strong>
                       </div>
                     </div>
+                    {c.error_type || c.errorType || c.ErrorType ? (
+                      <div className="change-meta">
+                        <span className="muted">Error type</span>
+                        <strong>{c.error_type || c.errorType || c.ErrorType}</strong>
+                      </div>
+                    ) : null}
+                    {c.micro_feedback || c.microFeedback || c.MicroFeedback ? (
+                      <div className="change-note">
+                        <span className="muted">Micro feedback</span>
+                        <p className="micro-feedback">
+                          {c.micro_feedback || c.microFeedback || c.MicroFeedback}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
