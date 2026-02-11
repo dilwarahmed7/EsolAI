@@ -36,6 +36,8 @@ namespace backend.Controllers
         {
             if (dto == null || string.IsNullOrWhiteSpace(dto.Title))
                 return BadRequest("Title is required.");
+            if (dto.DueDate == null)
+                return BadRequest("Due date is required.");
 
             var teacher = await GetTeacherAsync();
             if (teacher == null)
@@ -149,6 +151,9 @@ namespace backend.Controllers
 
             if (!string.IsNullOrWhiteSpace(dto.Title))
                 lesson.Title = dto.Title.Trim();
+
+            if (dto.DueDate == null)
+                return BadRequest("Due date is required.");
 
             lesson.DueDate = dto.DueDate;
 
