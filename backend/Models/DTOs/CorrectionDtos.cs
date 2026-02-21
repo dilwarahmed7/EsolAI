@@ -24,6 +24,12 @@ namespace backend.Models.DTOs
 
         [JsonPropertyName("to")]
         public string? To { get; set; }
+
+        [JsonPropertyName("error_type")]
+        public string? ErrorType { get; set; }
+
+        [JsonPropertyName("micro_feedback")]
+        public string? MicroFeedback { get; set; }
     }
 
     public class CorrectionResponse

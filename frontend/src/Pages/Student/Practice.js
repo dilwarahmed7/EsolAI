@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
 import Icon from '../../Components/Icons';
+import { useToast } from '../../Components/ToastProvider';
 import './Practice.css';
 
 const API_BASE = 'http://localhost:5144/api/practice';
@@ -41,8 +42,14 @@ function Practice({ role }) {
   const [micError, setMicError] = useState('');
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
+  const toast = useToast();
 
   const token = useMemo(() => sessionStorage.getItem('token') || localStorage.getItem('token'), []);
+  const stopMic = useCallback(() => {
+    if (recognitionRef.current && listening) {
+      recognitionRef.current.stop();
+    }
+  }, [listening]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -94,7 +101,7 @@ function Practice({ role }) {
     if (listening && personalised[activePersonalisedIndex]?.type !== 'Speaking') {
       stopMic();
     }
-  }, [listening, personalised, activePersonalisedIndex]);
+  }, [listening, personalised, activePersonalisedIndex, stopMic]);
 
   useEffect(() => {
     const fetchErrorTypes = async () => {
@@ -103,6 +110,7 @@ function Practice({ role }) {
 
       if (!token) {
         setError('Please sign in again to load your practice topics.');
+        toast.error('Please sign in again to load your practice topics.');
         setLoading(false);
         return;
       }
@@ -130,17 +138,19 @@ function Practice({ role }) {
       } catch (err) {
         console.error(err);
         setError(err.message || 'Something went wrong while loading errors.');
+        toast.error(err.message || 'Something went wrong while loading errors.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchErrorTypes();
-  }, [token]);
+  }, [token, toast]);
 
   const handleStart = async (errorType) => {
     if (!token) {
       setError('Please sign in again to start this exercise.');
+      toast.error('Please sign in again to start this exercise.');
       return;
     }
 
@@ -170,10 +180,12 @@ function Practice({ role }) {
       };
 
       sessionStorage.setItem('commonPracticeSession', JSON.stringify(normalised));
+      toast.success(`Practice started: ${errorType}`);
       navigate('/practice/common-errors', { state: normalised });
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to start practice. Please try again.');
+      toast.error(err.message || 'Failed to start practice. Please try again.');
     } finally {
       setStarting('');
     }
@@ -182,6 +194,7 @@ function Practice({ role }) {
   const loadPersonalised = async () => {
     if (!token) {
       setPersonalisedError('Please sign in again to start personalised practice.');
+      toast.error('Please sign in again to start personalised practice.');
       return;
     }
     setLoadingPersonalised(true);
@@ -217,10 +230,12 @@ function Practice({ role }) {
       setActivePersonalisedIndex(0);
       setAnswerResult(null);
       setResponses({});
+      toast.success('Personalised practice loaded.');
     } catch (err) {
       console.error(err);
       setPersonalised([]);
       setPersonalisedError(err.message || 'Could not load personalised errors.');
+      toast.error(err.message || 'Could not load personalised errors.');
     } finally {
       setLoadingPersonalised(false);
     }
@@ -247,12 +262,6 @@ function Practice({ role }) {
     setAnswerResult(null);
     setMicError('');
   }, [activePersonalisedIndex]);
-
-  const stopMic = () => {
-    if (recognitionRef.current && listening) {
-      recognitionRef.current.stop();
-    }
-  };
 
   const toggleMic = () => {
     setMicError('');
@@ -288,10 +297,12 @@ function Practice({ role }) {
 
     if (type === 'Reading' && !respState.selectedOptionId) {
       setAnswerResult({ success: false, message: 'Please choose an option before checking.' });
+      toast.info('Please choose an option before checking.');
       return;
     }
     if ((type === 'Writing' || type === 'Speaking') && !(respState.responseText || '').trim()) {
       setAnswerResult({ success: false, message: 'Please enter a response before checking.' });
+      toast.info('Please enter a response before checking.');
       return;
     }
 
@@ -327,9 +338,13 @@ function Practice({ role }) {
         correctedText,
         changes,
       });
+      if (correct) {
+        toast.success('Correct answer. Nice work.');
+      }
     } catch (err) {
       console.error(err);
       setAnswerResult({ success: false, message: err.message || 'Could not score this answer.' });
+      toast.error(err.message || 'Could not score this answer.');
     } finally {
       setAnswering(false);
     }

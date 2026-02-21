@@ -3,11 +3,19 @@ import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
 import DataGrid from '../../Components/DataGrid';
 import Icon from '../../Components/Icons';
+import { useToast } from '../../Components/ToastProvider';
 import './MyLessons.css';
 
 const API_BASE = 'http://localhost:5144/api/student/lessons';
 const FALLBACK_OUT_OF = 22;
 const PAGE_SIZE = 10;
+const HIDE_AI_CHANGES_REGEX = /\[\s*HIDE[\s_-]*AI[\s_-]*CHANGES\s*\]/gi;
+
+const hasHideAiChangesMarker = (text) =>
+  typeof text === 'string' && /\[\s*HIDE[\s_-]*AI[\s_-]*CHANGES\s*\]/i.test(text);
+
+const removeHideAiChangesMarker = (text) =>
+  typeof text === 'string' ? text.replace(HIDE_AI_CHANGES_REGEX, '').trim() : '';
 
 const formatDate = (raw) => {
   if (!raw) return 'No due date';
@@ -106,8 +114,9 @@ const parseAiChanges = (text) => {
 
 const stripChangesText = (text) => {
   if (!text) return '';
-  const idx = text.indexOf('Changes:');
-  return idx === -1 ? text : text.slice(0, idx).trim();
+  const withoutHideMarker = removeHideAiChangesMarker(text);
+  const idx = withoutHideMarker.indexOf('Changes:');
+  return idx === -1 ? withoutHideMarker : withoutHideMarker.slice(0, idx).trim();
 };
 
 const parseChangeLines = (text) => {
@@ -151,6 +160,9 @@ const parseChangeLines = (text) => {
 
 const changesFromFeedback = (feedback) => {
   if (!feedback) return [];
+  const teacherFeedback = feedback.TeacherFeedback || feedback.teacherFeedback || '';
+  if (hasHideAiChangesMarker(teacherFeedback)) return [];
+
   const raw = feedback.changes ?? feedback.Changes ?? null;
   if (Array.isArray(raw)) return raw;
   if (typeof raw === 'string') {
@@ -219,6 +231,7 @@ const deriveScores = (detail) => {
 
 function MyLessons({ role }) {
   const token = useMemo(() => sessionStorage.getItem('token') || localStorage.getItem('token'), []);
+  const toast = useToast();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -239,8 +252,8 @@ function MyLessons({ role }) {
   const [completedNameFilter, setCompletedNameFilter] = useState('');
   const [activeSortKey, setActiveSortKey] = useState('due');
   const [activeSortDir, setActiveSortDir] = useState('asc');
-  const [completedSortKey, setCompletedSortKey] = useState('name');
-  const [completedSortDir, setCompletedSortDir] = useState('asc');
+  const [completedSortKey, setCompletedSortKey] = useState('completedAt');
+  const [completedSortDir, setCompletedSortDir] = useState('desc');
   const [completedScoreFilter, setCompletedScoreFilter] = useState('all');
   const [activePage, setActivePage] = useState(1);
   const [completedPage, setCompletedPage] = useState(1);
@@ -312,6 +325,7 @@ function MyLessons({ role }) {
     const load = async () => {
       if (!token) {
         setError('Please sign in again.');
+        toast.error('Please sign in again.');
         setLoading(false);
         return;
       }
@@ -330,13 +344,26 @@ function MyLessons({ role }) {
       } catch (err) {
         console.error(err);
         setError(err.message || 'Failed to load lessons.');
+        toast.error(err.message || 'Failed to load lessons.');
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [token]);
+  }, [token, toast]);
+
+  useEffect(() => {
+    if (lessonView === 'todo') {
+      setActiveSortKey('due');
+      setActiveSortDir('asc');
+      return;
+    }
+    if (lessonView === 'completed') {
+      setCompletedSortKey('completedAt');
+      setCompletedSortDir('desc');
+    }
+  }, [lessonView]);
 
   const rows = lessons.map((lesson) => ({
     ...lesson,
@@ -383,6 +410,12 @@ function MyLessons({ role }) {
       if (key === 'due') {
         const aTime = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
         const bTime = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        if (aTime === bTime) return 0;
+        return aTime > bTime ? dirValue : -dirValue;
+      }
+      if (key === 'completedAt') {
+        const aTime = a.latestAttempt?.submittedAt ? new Date(a.latestAttempt.submittedAt).getTime() : -Infinity;
+        const bTime = b.latestAttempt?.submittedAt ? new Date(b.latestAttempt.submittedAt).getTime() : -Infinity;
         if (aTime === bTime) return 0;
         return aTime > bTime ? dirValue : -dirValue;
       }
@@ -465,6 +498,7 @@ function MyLessons({ role }) {
     if (!lesson) return;
     if (!token) {
       setError('Please sign in again.');
+      toast.error('Please sign in again.');
       return;
     }
 
@@ -513,6 +547,7 @@ function MyLessons({ role }) {
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to open lesson.');
+      toast.error(err.message || 'Failed to open lesson.');
       closeModal();
     } finally {
       setLoadingAttempt(false);
@@ -568,12 +603,14 @@ function MyLessons({ role }) {
       });
       if (!res.ok) throw new Error((await res.text()) || 'Could not save progress.');
       setAttemptMessage('Progress saved. You can continue later from the lessons list.');
+      toast.success('Progress saved.');
       await fetchAttemptDetail(lessonId, attemptId, false);
       await refreshLessons();
       closeModal();
     } catch (err) {
       console.error(err);
       setAttemptMessage(err.message || 'Failed to save progress.');
+      toast.error(err.message || 'Failed to save progress.');
     } finally {
       setSavingProgress(false);
     }
@@ -598,6 +635,7 @@ function MyLessons({ role }) {
 
     if (missing) {
       setAttemptMessage('Please answer every question before submitting.');
+      toast.info('Please answer every question before submitting.');
       return;
     }
 
@@ -618,10 +656,12 @@ function MyLessons({ role }) {
       setResponses(buildResponseState(data));
       setModalMode('feedback');
       setAttemptMessage('Submitted! Instant feedback is ready below.');
+      toast.success('Lesson submitted successfully.');
       await refreshLessons();
     } catch (err) {
       console.error(err);
       setAttemptMessage(err.message || 'Failed to submit attempt.');
+      toast.error(err.message || 'Failed to submit attempt.');
     } finally {
       setSubmitting(false);
     }
@@ -718,6 +758,7 @@ function MyLessons({ role }) {
       teacherScore != null || attemptMeta.TeacherReviewCompleted || attemptMeta.teacherReviewCompleted;
     const isSpeaking = type === 'Speaking';
     const changes = changesFromFeedback(feedback);
+    const correctedSentence = feedback?.AiCorrections || feedback?.aiCorrections || 'No corrections suggested.';
     const feedbackText = stripChangesText(
       feedback?.TeacherFeedback || feedback?.teacherFeedback || feedback?.AiFeedback || feedback?.aiFeedback
     );
@@ -755,8 +796,14 @@ function MyLessons({ role }) {
         </div>
         {inFeedback && feedback ? (
           <div className="feedback-block">
-            <h5>Corrections</h5>
-            <p>{feedback.AiCorrections || feedback.aiCorrections || 'No corrections suggested.'}</p>
+            <div className="feedback-highlight corrected">
+              <p className="feedback-label">Corrected sentence</p>
+              <p className="feedback-content corrected-text">{correctedSentence}</p>
+            </div>
+            <div className="feedback-highlight teacher">
+              <p className="feedback-label">Teacher feedback</p>
+              <p className="feedback-content">{feedbackText || 'No teacher feedback provided.'}</p>
+            </div>
             {changes.length > 0 ? (
               <div className="change-list">
                 {changes.map((c, idx) => (
@@ -773,11 +820,24 @@ function MyLessons({ role }) {
                         <strong>{c.to || c.To || ''}</strong>
                       </div>
                     </div>
+                    {c.error_type || c.errorType || c.ErrorType ? (
+                      <div className="change-meta">
+                        <span className="muted">Error type</span>
+                        <strong>{c.error_type || c.errorType || c.ErrorType}</strong>
+                      </div>
+                    ) : null}
+                    {c.micro_feedback || c.microFeedback || c.MicroFeedback ? (
+                      <div className="change-note">
+                        <span className="muted">Micro feedback</span>
+                        <p className="micro-feedback">
+                          {c.micro_feedback || c.microFeedback || c.MicroFeedback}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
             ) : null}
-            <p className="muted">{feedbackText}</p>
           </div>
         ) : null}
       </div>
@@ -916,6 +976,13 @@ function MyLessons({ role }) {
               </button>
               {lessonView === 'completed' ? (
                 <>
+                  <button
+                    type="button"
+                    className={`ghost-btn small ${completedSortKey === 'completedAt' ? 'active' : ''}`}
+                    onClick={() => toggleCompletedSort('completedAt')}
+                  >
+                    Completion date {completedSortKey === 'completedAt' ? (completedSortDir === 'asc' ? '↑' : '↓') : ''}
+                  </button>
                   <select
                     className="status-select"
                     value={completedFilter}

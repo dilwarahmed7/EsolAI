@@ -4,6 +4,7 @@ import PageLayout from '../../Components/PageLayout';
 import DataGrid from '../../Components/DataGrid';
 import Hero from '../../Components/Hero';
 import Icon from '../../Components/Icons';
+import { useToast } from '../../Components/ToastProvider';
 import './Lessons.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher';
@@ -60,8 +61,8 @@ function Lessons({ role }) {
   const [editingLessonId, setEditingLessonId] = useState(null);
 
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortKey, setSortKey] = useState('name'); // name | due
-  const [sortDir, setSortDir] = useState('asc');
+  const [sortKey, setSortKey] = useState('created');
+  const [sortDir, setSortDir] = useState('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [activeMenu, setActiveMenu] = useState(null);
@@ -69,9 +70,9 @@ function Lessons({ role }) {
 
   const normaliseDate = (dateStr) => {
     if (!dateStr) return null;
-    // Preserve local date but send as ISO
     return new Date(`${dateStr}T00:00:00`).toISOString();
   };
+  const toast = useToast();
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -225,6 +226,7 @@ function Lessons({ role }) {
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to open lesson.');
+      toast.error(err.message || 'Failed to open lesson.');
     } finally {
       setIsSaving(false);
     }
@@ -360,10 +362,17 @@ function Lessons({ role }) {
   const saveLesson = async (publish = false) => {
     if (!token) {
       setError('Please sign in again.');
+      toast.error('Please sign in again.');
       return;
     }
     if (!form.title.trim()) {
       setError('Title is required.');
+      toast.info('Please add a lesson title before saving.', 'Missing required field');
+      return;
+    }
+    if (!form.dueDate) {
+      setError('Due date is required.');
+      toast.info('Please add a due date before saving.', 'Missing required field');
       return;
     }
 
@@ -441,9 +450,17 @@ function Lessons({ role }) {
 
       closeDialog();
       await reloadLessons(selectedClassId);
+      if (publish) {
+        toast.success('Lesson published and assigned to classes.');
+      } else if (editingLessonId) {
+        toast.success('Lesson changes saved.');
+      } else {
+        toast.success('Lesson created successfully.');
+      }
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to save lesson.');
+      toast.error(err.message || 'Failed to save lesson.');
     } finally {
       setIsSaving(false);
     }
@@ -463,9 +480,11 @@ function Lessons({ role }) {
       });
       if (!res.ok) throw new Error((await res.text()) || 'Could not archive lesson.');
       setLessons((prev) => prev.filter((l) => (l.id || l.Id) !== lessonId));
+      toast.success('Lesson archived.');
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to archive lesson.');
+      toast.error(err.message || 'Failed to archive lesson.');
     }
   };
 
@@ -503,6 +522,17 @@ function Lessons({ role }) {
         if (aTime === bTime) return 0;
         return aTime > bTime ? dir : -dir;
       }
+      if (sortKey === 'created') {
+        const aCreated = a.createdAt || a.CreatedAt;
+        const bCreated = b.createdAt || b.CreatedAt;
+        const aTime = aCreated ? new Date(aCreated).getTime() : null;
+        const bTime = bCreated ? new Date(bCreated).getTime() : null;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+        if (aTime === bTime) return 0;
+        return aTime > bTime ? dir : -dir;
+      }
       return 0;
     });
 
@@ -536,7 +566,7 @@ function Lessons({ role }) {
       setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir('asc');
+      setSortDir(key === 'created' ? 'desc' : 'asc');
     }
     setPage(1);
   };
@@ -626,6 +656,13 @@ function Lessons({ role }) {
                 onClick={() => toggleSort('name')}
               >
                 Name {sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <button
+                type="button"
+                className={`ghost-btn small ${sortKey === 'created' ? 'active' : ''}`}
+                onClick={() => toggleSort('created')}
+              >
+                Creation date {sortKey === 'created' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </button>
               <button
                 type="button"
@@ -817,6 +854,7 @@ function Lessons({ role }) {
                   type="date"
                   value={form.dueDate}
                   onChange={(e) => setForm((prev) => ({ ...prev, dueDate: e.target.value }))}
+                  required
                 />
               </div>
 

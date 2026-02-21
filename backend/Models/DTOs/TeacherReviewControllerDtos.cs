@@ -11,5 +11,6 @@ namespace backend.Models.DTOs
         public string? CorrectedText { get; set; }
         public string? TeacherFeedback { get; set; }
         public int? TeacherScore { get; set; }
+        public List<CorrectionChange>? Changes { get; set; }
     }
 }

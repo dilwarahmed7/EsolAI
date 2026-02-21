@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace backend.Controllers
 {
@@ -136,6 +137,34 @@ namespace backend.Controllers
 
                 if (!string.IsNullOrWhiteSpace(incoming.TeacherFeedback))
                     review.TeacherFeedback = incoming.TeacherFeedback.Trim();
+
+                if (incoming.Changes != null)
+                {
+                    var baseFeedback = review.AiFeedback ?? string.Empty;
+                    var markerIndex = baseFeedback.IndexOf("Changes:", StringComparison.OrdinalIgnoreCase);
+                    if (markerIndex >= 0)
+                        baseFeedback = baseFeedback[..markerIndex].Trim();
+
+                    var cleaned = incoming.Changes
+                        .Where(c =>
+                            !string.IsNullOrWhiteSpace(c.From) ||
+                            !string.IsNullOrWhiteSpace(c.To) ||
+                            !string.IsNullOrWhiteSpace(c.ErrorType) ||
+                            !string.IsNullOrWhiteSpace(c.MicroFeedback))
+                        .ToList();
+
+                    if (cleaned.Count > 0)
+                    {
+                        var changesJson = JsonSerializer.Serialize(cleaned);
+                        review.AiFeedback = string.IsNullOrWhiteSpace(baseFeedback)
+                            ? $"Changes: {changesJson}"
+                            : $"{baseFeedback} Changes: {changesJson}";
+                    }
+                    else
+                    {
+                        review.AiFeedback = baseFeedback;
+                    }
+                }
 
                 var finalScore = incoming.TeacherScore ?? resp.AiScore ?? resp.Score;
                 var boundedScore = Math.Clamp(finalScore, 0, 10);

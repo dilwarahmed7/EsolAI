@@ -523,10 +523,49 @@
 }
 
 .feedback-block {
-  border: 1px dashed var(--border-soft);
-  border-radius: 10px;
-  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px;
   background: var(--bg-surface);
+  display: grid;
+  gap: 10px;
+}
+
+.feedback-highlight {
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-muted);
+}
+
+.feedback-highlight.corrected {
+  border-left: 4px solid #16a34a;
+  background: #f0fdf4;
+}
+
+.feedback-highlight.teacher {
+  border-left: 4px solid #2563eb;
+  background: #eff6ff;
+}
+
+.feedback-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.feedback-content {
+  margin: 0;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.corrected-text {
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .change-list {
@@ -557,6 +596,16 @@
   background: var(--bg-surface);
 }
 
+.dark-mode .feedback-highlight.corrected {
+  background: rgba(34, 197, 94, 0.12);
+  border-left-color: #22c55e;
+}
+
+.dark-mode .feedback-highlight.teacher {
+  background: rgba(59, 130, 246, 0.12);
+  border-left-color: #3b82f6;
+}
+
 .dark-mode .option-tile {
   background: var(--bg-surface);
 }
@@ -571,10 +620,36 @@
 }
 
 .change-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-soft);
+}
+
+.change-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  padding: 4px 2px 0;
+}
+
+.change-note {
+  display: grid;
+  gap: 6px;
+  padding: 6px 2px 2px;
+  border-top: 1px solid var(--border-soft);
+  width: 100%;
+}
+
+.micro-feedback {
+  margin: 0;
+  line-height: 1.5;
+  width: 100%;
 }
 
 .change-from,
@@ -592,6 +667,16 @@
 .arrow {
   font-weight: 900;
   color: var(--text-secondary);
+}
+
+@media (max-width: 720px) {
+  .change-body {
+    grid-template-columns: 1fr;
+  }
+
+  .arrow {
+    display: none;
+  }
 }
 
 .notice.subtle {

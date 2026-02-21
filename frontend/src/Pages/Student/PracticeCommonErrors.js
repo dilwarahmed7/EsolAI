@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import PageLayout from '../../Components/PageLayout';
 import Hero from '../../Components/Hero';
 import Icon from '../../Components/Icons';
+import { useToast } from '../../Components/ToastProvider';
 import './PracticeCommonErrors.css';
 
 const countBlanks = (text, fallback = 1) => {
@@ -22,6 +23,7 @@ const normaliseQuestions = (rawQuestions = []) =>
 function PracticeCommonErrors({ role }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [sessionData, setSessionData] = useState(() => {
     const fromState = location.state;
@@ -58,6 +60,12 @@ function PracticeCommonErrors({ role }) {
     setScore(null);
   }, [questions]);
 
+  useEffect(() => {
+    if (!sessionData || questions.length === 0) {
+      toast.error('No active practice session found.');
+    }
+  }, [sessionData, questions.length, toast]);
+
   const handleChange = (qIdx, blankIdx, value) => {
     setUserAnswers((prev) => {
       const next = [...prev];
@@ -88,6 +96,7 @@ function PracticeCommonErrors({ role }) {
     );
     setScore(totalCorrect);
     setSubmitted(true);
+    toast.success(`Practice submitted: ${totalCorrect}/${totalQuestions}`);
   };
 
   const handleReset = () => {
@@ -96,6 +105,7 @@ function PracticeCommonErrors({ role }) {
     );
     setSubmitted(false);
     setScore(null);
+    toast.info('Answers cleared.');
   };
 
   if (!sessionData || questions.length === 0) {

@@ -4,6 +4,7 @@ import PageLayout from '../../Components/PageLayout';
 import DataGrid from '../../Components/DataGrid';
 import Hero from '../../Components/Hero';
 import Icon from '../../Components/Icons';
+import { useToast } from '../../Components/ToastProvider';
 import './Students.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher/classes';
@@ -34,6 +35,7 @@ function Students({ role }) {
   const [nextLevel, setNextLevel] = useState('');
 
   const token = useMemo(() => sessionStorage.getItem('token') || localStorage.getItem('token'), []);
+  const toast = useToast();
   const requestedClassId = useMemo(() => {
     const val = searchParams.get('classId');
     if (!val) return null;
@@ -48,6 +50,7 @@ function Students({ role }) {
 
       if (!token) {
         setError('Please sign in again to manage your classes.');
+        toast.error('Please sign in again to manage your classes.');
         setLoadingClasses(false);
         return;
       }
@@ -71,13 +74,14 @@ function Students({ role }) {
       } catch (err) {
         console.error(err);
         setError(err.message || 'Failed to load classes.');
+        toast.error(err.message || 'Failed to load classes.');
       } finally {
         setLoadingClasses(false);
       }
     };
 
     loadClasses();
-  }, [token, requestedClassId]);
+  }, [token, requestedClassId, toast]);
 
   useEffect(() => {
     if (!requestedClassId || classes.length === 0) return;
@@ -122,13 +126,14 @@ function Students({ role }) {
       } catch (err) {
         console.error(err);
         setError(err.message || 'Failed to load students.');
+        toast.error(err.message || 'Failed to load students.');
       } finally {
         setLoadingStudents(false);
       }
     };
 
     loadStudents();
-  }, [selectedClassId, token]);
+  }, [selectedClassId, token, toast]);
 
   const handleCreateClass = async (e) => {
     e.preventDefault();
@@ -152,9 +157,11 @@ function Students({ role }) {
       setSelectedClassId(Number(created.id || created.Id));
       setNewClassName('');
       setShowAddClass(false);
+      toast.success('Class created successfully.');
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to create class.');
+      toast.error(err.message || 'Failed to create class.');
     }
   };
 
@@ -197,9 +204,11 @@ function Students({ role }) {
         });
         setStudents(normalised);
       }
+      toast.success('Student added to class.');
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to add student.');
+      toast.error(err.message || 'Failed to add student.');
     }
   };
 
@@ -218,9 +227,11 @@ function Students({ role }) {
       if (!res.ok) throw new Error((await res.text()) || 'Could not remove student.');
 
       setStudents((prev) => prev.filter((s) => s.id !== studentId));
+      toast.success('Student removed from class.');
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to remove student.');
+      toast.error(err.message || 'Failed to remove student.');
     }
   };
 
@@ -245,9 +256,11 @@ function Students({ role }) {
       setStudents((prev) =>
         prev.map((s) => (s.id === studentId ? { ...s, level: trimmed } : s)),
       );
+      toast.success(`Student level updated to ${trimmed}.`);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to update level.');
+      toast.error(err.message || 'Failed to update level.');
     }
   };
 
