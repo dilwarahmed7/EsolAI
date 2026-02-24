@@ -526,11 +526,36 @@
   overflow: visible;
 }
 
+.template-library {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.template-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+}
+
+.template-btn span {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 .group-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.danger-text-btn {
+  color: #b91c1c;
 }
 
 .reading-card {
@@ -543,6 +568,50 @@
   margin-top: 8px;
   background: #eef2ff;
   overflow: visible;
+}
+
+.fill-blank-card {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.fill-blank-token-picker {
+  border: 1px dashed var(--border-soft);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--bg-surface);
+  line-height: 2.2;
+}
+
+.fill-blank-token {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin: 2px 4px 2px 0;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.fill-blank-token.selected {
+  border-color: var(--primary);
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primary-strong);
+}
+
+.fill-blank-separator {
+  white-space: pre-wrap;
+}
+
+.fill-blank-preview {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .options-grid {
@@ -674,6 +743,23 @@
   border-color: var(--border-soft);
 }
 
+.dark-mode .fill-blank-card {
+  background: var(--bg-muted);
+  border-color: var(--border-soft);
+}
+
+.dark-mode .fill-blank-token-picker,
+.dark-mode .fill-blank-preview {
+  background: var(--bg-surface);
+  border-color: #1f2937;
+}
+
+.dark-mode .fill-blank-token {
+  background: var(--bg-surface);
+  border-color: #334155;
+  color: var(--text-primary);
+}
+
 .dark-mode .option-row input {
   background: var(--bg-surface);
   border-color: #1f2937;
@@ -694,6 +780,10 @@
 .dark-mode .radio-label {
   background: var(--bg-surface);
   border-color: #1f2937;
+}
+
+.dark-mode .danger-text-btn {
+  color: #fca5a5;
 }
 
 .dark-mode .form-actions {

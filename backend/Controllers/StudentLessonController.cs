@@ -61,6 +61,16 @@ namespace backend.Controllers
                 .ToListAsync();
 
             var lessonIds = lessons.Select(l => l.Id).ToList();
+            var questionMeta = await _db.LessonQuestions
+                .Where(q => lessonIds.Contains(q.LessonId))
+                .Select(q => new { q.LessonId, q.Type, q.ReadingSnippet })
+                .ToListAsync();
+            var scoreOutOfByLessonId = questionMeta
+                .GroupBy(q => q.LessonId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(q => GetQuestionScoreOutOf(q.Type, q.ReadingSnippet))
+                );
 
             var attempts = await _db.LessonAttempts
                 .Where(a => a.StudentId == student.Id && lessonIds.Contains(a.LessonId))
@@ -109,7 +119,7 @@ namespace backend.Controllers
                     OriginalAttempt = original,
                     RetryAttempt = retry,
                     RetryAllowed = hasSubmitted && !hasRetried && active == null,
-                    ScoreOutOf = 22
+                    ScoreOutOf = scoreOutOfByLessonId.TryGetValue(lesson.Id, out var outOf) ? outOf : 0
                 };
             }).ToList();
 
@@ -277,11 +287,11 @@ namespace backend.Controllers
                 var existing = attempt.Responses.FirstOrDefault(r => r.LessonQuestionId == question.Id);
                 if (existing == null)
                 {
-                    existing = new QuestionResponse
+                        existing = new QuestionResponse
                     {
                         LessonAttemptId = attempt.Id,
                         LessonQuestionId = question.Id,
-                        NeedsReview = question.Type != QuestionType.Reading
+                        NeedsReview = question.Type == QuestionType.Writing || question.Type == QuestionType.Speaking
                     };
                     attempt.Responses.Add(existing);
                 }
@@ -292,10 +302,21 @@ namespace backend.Controllers
                     existing.IsCorrect = null;
                     existing.Score = 0;
                     existing.AiScore = null;
+                    existing.NeedsReview = false;
+                }
+                else if (question.Type == QuestionType.FillInBlank)
+                {
+                    existing.ResponseText = (incoming.ResponseText ?? string.Empty).Trim();
+                    existing.SelectedOptionId = null;
+                    existing.IsCorrect = null;
+                    existing.Score = 0;
+                    existing.AiScore = null;
+                    existing.NeedsReview = false;
                 }
                 else
                 {
                     existing.ResponseText = (incoming.ResponseText ?? string.Empty).Trim();
+                    existing.SelectedOptionId = null;
                     existing.Score = 0;
                     existing.AiScore = null;
                     existing.NeedsReview = true;
@@ -417,6 +438,62 @@ namespace backend.Controllers
                         });
                     }
                 }
+                else if (q.Type == QuestionType.FillInBlank)
+                {
+                    var expectedAnswers = q.AnswerOptions
+                        .OrderBy(o => o.Id)
+                        .Select(o => (o.Text ?? string.Empty).Trim())
+                        .Where(t => !string.IsNullOrWhiteSpace(t))
+                        .ToList();
+
+                    var blanksRequired = CountFillBlankPlaceholders(q.ReadingSnippet);
+                    var studentAnswers = ParseFillBlankAnswers(submitted.ResponseText);
+
+                    if (blanksRequired <= 0)
+                        return BadRequest($"Fill in the blank question {q.Id} is not configured correctly.");
+
+                    if (expectedAnswers.Count != blanksRequired)
+                        return BadRequest($"Fill in the blank question {q.Id} has mismatched blanks and answers.");
+
+                    if (studentAnswers.Count != blanksRequired || studentAnswers.Any(a => string.IsNullOrWhiteSpace(a)))
+                        return BadRequest($"Fill in the blank question {q.Id} requires {blanksRequired} answer(s).");
+
+                    var correctBlankCount = expectedAnswers
+                        .Zip(studentAnswers, (expected, actual) => FillBlankAnswerMatches(expected, actual))
+                        .Count(x => x);
+
+                    var isCorrect = correctBlankCount == blanksRequired;
+                    var score = correctBlankCount;
+                    readingScore += score;
+
+                    var normalisedStudentAnswers = studentAnswers
+                        .Select(a => (a ?? string.Empty).Trim())
+                        .ToList();
+
+                    var resp = new QuestionResponse
+                    {
+                        LessonAttemptId = attempt.Id,
+                        LessonQuestionId = q.Id,
+                        ResponseText = JsonSerializer.Serialize(normalisedStudentAnswers),
+                        IsCorrect = isCorrect,
+                        Score = score,
+                        NeedsReview = false
+                    };
+
+                    attempt.Responses.Add(resp);
+
+                    if (!isCorrect)
+                    {
+                        _db.StudentErrors.Add(new StudentError
+                        {
+                            StudentId = student.Id,
+                            QuestionResponse = resp,
+                            ErrorType = q.Type.ToString(),
+                            CreatedAt = DateTime.UtcNow,
+                            Resolved = false
+                        });
+                    }
+                }
                 else if (q.Type == QuestionType.Writing || q.Type == QuestionType.Speaking)
                 {
                     var text = (submitted.ResponseText ?? string.Empty).Trim();
@@ -492,13 +569,13 @@ namespace backend.Controllers
                         });
                     }
                     if (q.Type == QuestionType.Writing)
-                        provisionalWriting = aiScore;
+                        provisionalWriting += aiScore;
                     else if (q.Type == QuestionType.Speaking)
-                        provisionalSpeaking = aiScore;
+                        provisionalSpeaking += aiScore;
                 }
             }
 
-            attempt.ReadingScore = Math.Clamp(readingScore, 0, 2);
+            attempt.ReadingScore = Math.Max(0, readingScore);
 
             attempt.WritingScore = provisionalWriting;
             attempt.SpeakingScore = provisionalSpeaking;
@@ -535,19 +612,23 @@ namespace backend.Controllers
         {
             int ResolveScore(QuestionType type, int fallback)
             {
-                var response = attempt.Responses.FirstOrDefault(r => r.LessonQuestion.Type == type);
-                if (response == null)
+                var responses = attempt.Responses
+                    .Where(r => r.LessonQuestion.Type == type)
+                    .ToList();
+
+                if (responses.Count == 0)
                     return fallback;
 
-                // Prefer explicit teacher score, then the stored score after review, then AI score.
-                if (response.FeedbackReview?.TeacherScore != null)
-                    return response.FeedbackReview.TeacherScore.Value;
-                if (!response.NeedsReview || attempt.TeacherReviewCompleted)
+                return responses.Sum(response =>
+                {
+                    if (response.FeedbackReview?.TeacherScore != null)
+                        return response.FeedbackReview.TeacherScore.Value;
+                    if (!response.NeedsReview || attempt.TeacherReviewCompleted)
+                        return response.Score;
+                    if (response.AiScore != null)
+                        return response.AiScore.Value;
                     return response.Score;
-                if (response.AiScore != null)
-                    return response.AiScore.Value;
-
-                return fallback;
+                });
             }
 
             var writing = ResolveScore(QuestionType.Writing, attempt.WritingScore);
@@ -587,7 +668,7 @@ namespace backend.Controllers
                         q.Order,
                         q.ReadingSnippet,
                         q.Prompt,
-                        AnswerOptions = q.Type == QuestionType.Reading
+                        AnswerOptions = (q.Type == QuestionType.Reading || (includeCorrectAnswers && q.Type == QuestionType.FillInBlank))
                             ? q.AnswerOptions
                                 .Select(o => new AnswerOptionPublicDto { Id = o.Id, Text = o.Text })
                                 .ToList()
@@ -630,7 +711,7 @@ namespace backend.Controllers
                     summary.SubmittedAt,
                     attempt.StartedAt,
                     summary.TotalScore,
-                    ScoreOutOf = 22,
+                    ScoreOutOf = CalculateLessonScoreOutOf(attempt.Lesson.Questions),
                     summary.ReviewStatus,
                     summary.ReadingScore,
                     summary.WritingScore,
@@ -669,6 +750,53 @@ namespace backend.Controllers
                 return new List<CorrectionChange>();
             }
         }
+
+        private static int CountFillBlankPlaceholders(string? sentenceTemplate)
+        {
+            if (string.IsNullOrWhiteSpace(sentenceTemplate))
+                return 0;
+
+            return sentenceTemplate.Split("___").Length - 1;
+        }
+
+        private static List<string> ParseFillBlankAnswers(string? responseText)
+        {
+            if (string.IsNullOrWhiteSpace(responseText))
+                return new List<string>();
+
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<List<string>>(responseText);
+                if (parsed != null)
+                    return parsed.Select(x => (x ?? string.Empty).Trim()).ToList();
+            }
+            catch
+            {
+            }
+
+            return responseText
+                .Split('|')
+                .Select(x => x.Trim())
+                .Where(x => x.Length > 0)
+                .ToList();
+        }
+
+        private static bool FillBlankAnswerMatches(string expected, string actual)
+            => string.Equals(expected?.Trim(), actual?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+        private static int GetQuestionScoreOutOf(QuestionType type, string? readingSnippet)
+        {
+            if (type == QuestionType.Reading)
+                return 1;
+            if (type == QuestionType.FillInBlank)
+                return Math.Max(1, CountFillBlankPlaceholders(readingSnippet));
+            if (type == QuestionType.Writing || type == QuestionType.Speaking)
+                return 10;
+            return 0;
+        }
+
+        private static int CalculateLessonScoreOutOf(IEnumerable<LessonQuestion> questions)
+            => questions.Sum(q => GetQuestionScoreOutOf(q.Type, q.ReadingSnippet));
     }
 
 }
