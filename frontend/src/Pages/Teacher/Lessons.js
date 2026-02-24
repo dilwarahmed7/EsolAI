@@ -35,6 +35,7 @@ function Lessons({ role }) {
   const dialogRef = useRef(null);
   const formContainerRef = useRef(null);
   const autoOpenRef = useRef(false);
+  const autoEditRef = useRef(null);
   const formatInputDate = (raw) => {
     if (!raw) return '';
     const d = new Date(raw);
@@ -161,12 +162,26 @@ function Lessons({ role }) {
 
   useEffect(() => {
     const wantsCreate = searchParams.get('create');
+    const wantsEdit = searchParams.get('edit');
+    if (wantsEdit) return;
     if (!wantsCreate || autoOpenRef.current) return;
     if (loadingClasses) return;
 
     autoOpenRef.current = true;
     openCreateDialog();
   }, [searchParams, loadingClasses, openCreateDialog]);
+
+  useEffect(() => {
+    const wantsEdit = searchParams.get('edit');
+    if (!wantsEdit) return;
+    if (!token) return;
+    if (loadingLessons) return;
+    if (autoEditRef.current === wantsEdit) return;
+
+    autoEditRef.current = wantsEdit;
+    const parsedId = Number(wantsEdit);
+    openEditDialog(Number.isFinite(parsedId) ? parsedId : wantsEdit);
+  }, [searchParams, token, loadingLessons]);
 
   const openEditDialog = async (lessonId) => {
     if (!token) return;
