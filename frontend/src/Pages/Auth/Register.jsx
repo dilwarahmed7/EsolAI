@@ -28,6 +28,7 @@ const Register = () => {
           }
         });
 
+        if (!seen.has("Urdu")) names.push("Urdu");
         return names.sort((a, b) => a.localeCompare(b));
       }
     } catch (err) {
@@ -41,6 +42,7 @@ const Register = () => {
       "Chinese",
       "Arabic",
       "Hindi",
+      "Urdu",
       "Portuguese",
       "Bengali",
       "Russian",

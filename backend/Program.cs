@@ -89,7 +89,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await L1ErrorTypeSeeder.SeedAsync(context);
+    // await L1ErrorTypeSeeder.SeedAsync(context); CAUSING BUG
 }
 
 if (app.Environment.IsDevelopment())

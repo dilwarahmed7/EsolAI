@@ -11,6 +11,7 @@ namespace backend.Models
     {
         Reading = 0,
         Writing = 1,
-        Speaking = 2
+        Speaking = 2,
+        FillInBlank = 3
     }
 }

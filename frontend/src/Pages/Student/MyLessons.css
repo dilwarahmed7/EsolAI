@@ -510,6 +510,32 @@
   align-items: center;
 }
 
+.fill-blank-student {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 6px;
+  line-height: 1.9;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-surface);
+}
+
+.fill-blank-input {
+  min-width: 92px;
+  max-width: 180px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  color: var(--text-primary);
+}
+
+.fill-blank-input.feedback {
+  background: var(--bg-muted);
+}
+
 .mic-btn {
   display: inline-flex;
   align-items: center;
@@ -612,6 +638,15 @@
 
 .dark-mode .text-response textarea {
   background: var(--bg-surface);
+}
+
+.dark-mode .fill-blank-student,
+.dark-mode .fill-blank-input {
+  background: var(--bg-surface);
+}
+
+.dark-mode .fill-blank-input {
+  border-color: #1f2937;
 }
 
 .change-row .pill.tiny {

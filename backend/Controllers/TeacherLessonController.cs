@@ -139,6 +139,9 @@ namespace backend.Controllers
         [HttpPut("{lessonId:int}")]
         public async Task<IActionResult> UpdateLesson(int lessonId, [FromBody] UpdateLessonRequest dto)
         {
+            if (dto == null)
+                return BadRequest("Update payload is required.");
+
             var teacher = await GetTeacherAsync();
             if (teacher == null)
                 return Unauthorized("Teacher profile not found.");
@@ -152,10 +155,8 @@ namespace backend.Controllers
             if (!string.IsNullOrWhiteSpace(dto.Title))
                 lesson.Title = dto.Title.Trim();
 
-            if (dto.DueDate == null)
-                return BadRequest("Due date is required.");
-
-            lesson.DueDate = dto.DueDate;
+            if (dto.DueDate.HasValue)
+                lesson.DueDate = dto.DueDate.Value;
 
             if (dto.Status.HasValue && dto.Status.Value != LessonStatus.Published)
                 lesson.Status = dto.Status.Value;
@@ -170,6 +171,32 @@ namespace backend.Controllers
                 lesson.Title,
                 Status = lesson.Status.ToString(),
                 lesson.DueDate
+            });
+        }
+
+        [HttpDelete("{lessonId:int}")]
+        public async Task<IActionResult> DeleteDraft(int lessonId)
+        {
+            var teacher = await GetTeacherAsync();
+            if (teacher == null)
+                return Unauthorized("Teacher profile not found.");
+
+            var lesson = await _db.Lessons
+                .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacher.Id);
+
+            if (lesson == null)
+                return NotFound("Lesson not found.");
+
+            if (lesson.Status != LessonStatus.Draft)
+                return BadRequest("Only draft lessons can be deleted. Archive published lessons instead.");
+
+            _db.Lessons.Remove(lesson);
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                lessonId,
+                Deleted = true
             });
         }
 
@@ -237,6 +264,32 @@ namespace backend.Controllers
                         {
                             Text = opt.Text.Trim(),
                             IsCorrect = opt.IsCorrect
+                        });
+                    }
+                }
+                else if (type == QuestionType.FillInBlank)
+                {
+                    if (string.IsNullOrWhiteSpace(entity.ReadingSnippet))
+                        return BadRequest("Fill in the blank questions must include a sentence template.");
+                    if (!entity.ReadingSnippet.Contains("___"))
+                        return BadRequest("Fill in the blank questions must include at least one ___ blank.");
+
+                    if (q.AnswerOptions == null || q.AnswerOptions.Count < 1)
+                        return BadRequest("Fill in the blank questions must have at least 1 blank answer.");
+
+                    var placeholderCount = entity.ReadingSnippet.Split("___").Length - 1;
+                    if (placeholderCount != q.AnswerOptions.Count)
+                        return BadRequest("Fill in the blank questions must have the same number of blanks and answers.");
+
+                    foreach (var opt in q.AnswerOptions)
+                    {
+                        if (string.IsNullOrWhiteSpace(opt.Text))
+                            return BadRequest("Fill in the blank answers cannot be empty.");
+
+                        entity.AnswerOptions.Add(new AnswerOption
+                        {
+                            Text = opt.Text.Trim(),
+                            IsCorrect = true
                         });
                     }
                 }
@@ -330,15 +383,8 @@ namespace backend.Controllers
 
             var questions = lesson.Questions;
 
-            if (questions.Count != 4)
-                return BadRequest("Lesson must have exactly 4 questions (2 reading, 1 writing, 1 speaking).");
-
-            var readingCount = questions.Count(q => q.Type == QuestionType.Reading);
-            var writingCount = questions.Count(q => q.Type == QuestionType.Writing);
-            var speakingCount = questions.Count(q => q.Type == QuestionType.Speaking);
-
-            if (readingCount != 2 || writingCount != 1 || speakingCount != 1)
-                return BadRequest("Lesson must have 2 Reading, 1 Writing, and 1 Speaking question.");
+            if (questions.Count < 4)
+                return BadRequest("Lesson must have at least 4 questions before publishing.");
 
             foreach (var rq in questions.Where(q => q.Type == QuestionType.Reading))
             {
@@ -351,6 +397,25 @@ namespace backend.Controllers
                 var correctCount = rq.AnswerOptions.Count(o => o.IsCorrect);
                 if (correctCount != 1)
                     return BadRequest("Each reading question must have exactly ONE correct option.");
+            }
+
+            foreach (var fbq in questions.Where(q => q.Type == QuestionType.FillInBlank))
+            {
+                if (string.IsNullOrWhiteSpace(fbq.ReadingSnippet))
+                    return BadRequest("Fill in the blank questions must have a sentence template.");
+
+                if (!fbq.ReadingSnippet.Contains("___"))
+                    return BadRequest("Fill in the blank questions must include at least one ___ blank.");
+
+                if (fbq.AnswerOptions.Count < 1)
+                    return BadRequest("Fill in the blank questions must have at least one answer.");
+
+                if (fbq.AnswerOptions.Any(o => string.IsNullOrWhiteSpace(o.Text)))
+                    return BadRequest("Fill in the blank answers cannot be empty.");
+
+                var placeholderCount = fbq.ReadingSnippet.Split("___").Length - 1;
+                if (placeholderCount != fbq.AnswerOptions.Count)
+                    return BadRequest("Fill in the blank questions must have the same number of blanks and answers.");
             }
 
             lesson.Status = LessonStatus.Published;

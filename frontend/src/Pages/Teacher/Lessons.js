@@ -9,6 +9,33 @@ import './Lessons.css';
 
 const API_BASE = 'http://localhost:5144/api/teacher';
 const PAGE_SIZE = 10;
+const MIN_PUBLISH_QUESTIONS = 4;
+let localQuestionId = 1;
+
+const nextQuestionId = () => `q-${localQuestionId++}`;
+
+const QUESTION_TEMPLATE_LIBRARY = [
+  {
+    key: 'reading',
+    label: 'Reading',
+    subtitle: 'Multiple choice',
+  },
+  {
+    key: 'writing',
+    label: 'Writing',
+    subtitle: 'Essay prompt',
+  },
+  {
+    key: 'speaking',
+    label: 'Speaking',
+    subtitle: 'Oral response',
+  },
+  {
+    key: 'fillBlank',
+    label: 'Fill in the blank',
+    subtitle: 'Click words to hide',
+  },
+];
 
 const createInitialReading = () => ({
   snippet: '',
@@ -20,13 +47,122 @@ const createInitialReading = () => ({
   ],
 });
 
+const createQuestionFromTemplate = (type) => {
+  if (type === 'reading') {
+    return {
+      id: nextQuestionId(),
+      type: 'reading',
+      ...createInitialReading(),
+    };
+  }
+  if (type === 'writing') {
+    return {
+      id: nextQuestionId(),
+      type: 'writing',
+      prompt: '',
+    };
+  }
+  if (type === 'speaking') {
+    return {
+      id: nextQuestionId(),
+      type: 'speaking',
+      prompt: '',
+    };
+  }
+  if (type === 'fillBlank') {
+    return {
+      id: nextQuestionId(),
+      type: 'fillBlank',
+      prompt: 'Complete the sentence by filling in the blanks.',
+      sentence: '',
+      blankTokenIndexes: [],
+    };
+  }
+  return null;
+};
+
+const tokeniseFillBlankSentence = (sentence) => {
+  const rawTokens = (sentence || '').match(/[A-Za-z0-9']+|[^A-Za-z0-9']+/g) || [];
+  let wordIndex = 0;
+  return rawTokens.map((text, tokenIndex) => {
+    const isWord = /^[A-Za-z0-9']+$/.test(text);
+    const token = {
+      text,
+      tokenIndex,
+      isWord,
+      wordIndex: isWord ? wordIndex : null,
+    };
+    if (isWord) wordIndex += 1;
+    return token;
+  });
+};
+
+const buildFillBlankTemplate = (sentence, blankTokenIndexes) => {
+  const tokens = tokeniseFillBlankSentence(sentence);
+  const selected = new Set((blankTokenIndexes || []).map((idx) => Number(idx)).filter(Number.isFinite));
+  const answers = [];
+
+  const maskedSentence = tokens
+    .map((token) => {
+      if (!token.isWord) return token.text;
+      if (selected.has(token.wordIndex)) {
+        answers.push(token.text);
+        return '___';
+      }
+      return token.text;
+    })
+    .join('');
+
+  return { maskedSentence, answers };
+};
+
+const hydrateFillBlankFromSaved = (maskedSentence, answerOptions) => {
+  const answers = (answerOptions || [])
+    .slice()
+    .sort((a, b) => Number(a?.id ?? a?.Id ?? 0) - Number(b?.id ?? b?.Id ?? 0))
+    .map((o) => o.text || o.Text || '')
+    .filter(Boolean);
+  const parts = String(maskedSentence || '').split('___');
+  if (parts.length <= 1) {
+    return {
+      sentence: String(maskedSentence || ''),
+      blankTokenIndexes: [],
+    };
+  }
+
+  let restoredSentence = '';
+  let runningWordCount = 0;
+  const blankTokenIndexes = [];
+
+  for (let i = 0; i < parts.length; i += 1) {
+    const part = parts[i] || '';
+    restoredSentence += part;
+    runningWordCount += tokeniseFillBlankSentence(part).filter((t) => t.isWord).length;
+
+    if (i < parts.length - 1) {
+      const answer = answers[i] || '___';
+      const answerWordCount = tokeniseFillBlankSentence(answer).filter((t) => t.isWord).length;
+
+      if (answerWordCount > 0) {
+        blankTokenIndexes.push(runningWordCount);
+      }
+
+      restoredSentence += answer;
+      runningWordCount += answerWordCount;
+    }
+  }
+
+  return {
+    sentence: restoredSentence,
+    blankTokenIndexes,
+  };
+};
+
 const createInitialForm = () => ({
   title: '',
   dueDate: '',
   classIds: [],
-  reading: [createInitialReading(), createInitialReading()],
-  writingPrompt: '',
-  speakingPrompt: '',
+  questions: [],
 });
 
 function Lessons({ role }) {
@@ -68,6 +204,7 @@ function Lessons({ role }) {
   const [page, setPage] = useState(1);
   const [activeMenu, setActiveMenu] = useState(null);
   const menuRefs = useRef({});
+  const dialogSnapshotRef = useRef(JSON.stringify(createInitialForm()));
 
   const normaliseDate = (dateStr) => {
     if (!dateStr) return null;
@@ -75,16 +212,71 @@ function Lessons({ role }) {
   };
   const toast = useToast();
 
+  const serializeLessonForm = useCallback(
+    (candidateForm, candidateEditingId = editingLessonId) =>
+      JSON.stringify({
+        editingLessonId: candidateEditingId ?? null,
+        title: candidateForm?.title || '',
+        dueDate: candidateForm?.dueDate || '',
+        classIds: [...(candidateForm?.classIds || [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b),
+        questions: (candidateForm?.questions || []).map((q) => {
+          if (q.type === 'reading') {
+            return {
+              type: q.type,
+              snippet: q.snippet || '',
+              prompt: q.prompt || '',
+              options: (q.options || []).map((opt) => ({
+                text: opt.text || '',
+                isCorrect: !!opt.isCorrect,
+              })),
+            };
+          }
+
+          if (q.type === 'fillBlank') {
+            return {
+              type: q.type,
+              prompt: q.prompt || '',
+              sentence: q.sentence || '',
+              blankTokenIndexes: [...(q.blankTokenIndexes || [])].sort((a, b) => a - b),
+            };
+          }
+
+          return {
+            type: q.type,
+            prompt: q.prompt || '',
+          };
+        }),
+      }),
+    [editingLessonId]
+  );
+
+  const hasUnsavedDialogChanges = useCallback(() => {
+    if (!isDialogOpen) return false;
+    return serializeLessonForm(form) !== dialogSnapshotRef.current;
+  }, [form, isDialogOpen, serializeLessonForm]);
+
+  const closeDialog = useCallback(() => {
+    setIsDialogOpen(false);
+    setEditingLessonId(null);
+  }, []);
+
+  const requestCloseDialog = useCallback(() => {
+    if (isSaving) return;
+    if (hasUnsavedDialogChanges() && !window.confirm('Discard your lesson changes?')) {
+      return;
+    }
+    closeDialog();
+  }, [closeDialog, hasUnsavedDialogChanges, isSaving]);
+
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        setIsDialogOpen(false);
-        setEditingLessonId(null);
-      }
+      if (e.key !== 'Escape' || !isDialogOpen || isSaving) return;
+      e.preventDefault();
+      requestCloseDialog();
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
+  }, [isDialogOpen, isSaving, requestCloseDialog]);
 
   useEffect(() => {
     if (!token) {
@@ -155,10 +347,11 @@ function Lessons({ role }) {
   const openCreateDialog = useCallback(() => {
     const initial = createInitialForm();
     if (selectedClassId) initial.classIds = [selectedClassId];
+    dialogSnapshotRef.current = serializeLessonForm(initial, null);
     setForm(initial);
     setEditingLessonId(null);
     setIsDialogOpen(true);
-  }, [selectedClassId]);
+  }, [selectedClassId, serializeLessonForm]);
 
   useEffect(() => {
     const wantsCreate = searchParams.get('create');
@@ -197,45 +390,72 @@ function Lessons({ role }) {
 
       const normaliseType = (q) => {
         const raw = q.Type ?? q.type;
-        if (typeof raw === 'string') return raw;
-        if (raw === 0) return 'Reading';
-        if (raw === 1) return 'Writing';
-        if (raw === 2) return 'Speaking';
+        if (typeof raw === 'string') return raw.toLowerCase();
+        if (raw === 0) return 'reading';
+        if (raw === 1) return 'writing';
+        if (raw === 2) return 'speaking';
+        if (raw === 3) return 'fillinblank';
         return '';
       };
       const normaliseOrder = (q) => Number(q.Order ?? q.order ?? 0);
-
-      const reading = questionsRaw
-        .filter((q) => normaliseType(q) === 'Reading')
+      const questions = questionsRaw
+        .slice()
         .sort((a, b) => normaliseOrder(a) - normaliseOrder(b))
         .map((q) => {
-          const opts = (q.AnswerOptions || q.answerOptions || []).map((o) => ({
-            text: o.Text || o.text || '',
-            isCorrect: o.IsCorrect ?? o.isCorrect ?? false,
-          }));
-          while (opts.length < 3) opts.push({ text: '', isCorrect: false });
-          return {
-            snippet: q.ReadingSnippet || q.readingSnippet || '',
-            prompt: q.Prompt || q.prompt || '',
-            options: opts.slice(0, 3),
-          };
-        });
+          const type = normaliseType(q);
+          if (type === 'reading') {
+            const opts = (q.AnswerOptions || q.answerOptions || []).map((o) => ({
+              text: o.Text || o.text || '',
+              isCorrect: o.IsCorrect ?? o.isCorrect ?? false,
+            }));
+            while (opts.length < 3) opts.push({ text: '', isCorrect: false });
+            return {
+              id: nextQuestionId(),
+              type: 'reading',
+              snippet: q.ReadingSnippet || q.readingSnippet || '',
+              prompt: q.Prompt || q.prompt || '',
+              options: opts.slice(0, 3),
+            };
+          }
+          if (type === 'writing') {
+            return {
+              id: nextQuestionId(),
+              type: 'writing',
+              prompt: q.Prompt || q.prompt || '',
+            };
+          }
+          if (type === 'speaking') {
+            return {
+              id: nextQuestionId(),
+              type: 'speaking',
+              prompt: q.Prompt || q.prompt || '',
+            };
+          }
+          if (type === 'fillinblank') {
+            const answerOptions = q.AnswerOptions || q.answerOptions || [];
+            const hydrated = hydrateFillBlankFromSaved(q.ReadingSnippet || q.readingSnippet || '', answerOptions);
+            return {
+              id: nextQuestionId(),
+              type: 'fillBlank',
+              prompt: q.Prompt || q.prompt || 'Complete the sentence by filling in the blanks.',
+              sentence: hydrated.sentence,
+              blankTokenIndexes: hydrated.blankTokenIndexes,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean);
 
-      while (reading.length < 2) reading.push(createInitialReading());
-
-      const writing = questionsRaw.find((q) => normaliseType(q) === 'Writing');
-      const speaking = questionsRaw.find((q) => normaliseType(q) === 'Speaking');
-
-      setForm({
+      const nextForm = {
         title: data.Title || data.title || '',
         dueDate: formatInputDate(data.DueDate || data.dueDate),
         classIds: (data.AssignedClassIds || data.assignedClassIds || [])
           .map((id) => Number(id))
           .filter((id) => Number.isFinite(id)),
-        reading: reading.slice(0, 2),
-        writingPrompt: writing?.Prompt || writing?.prompt || '',
-        speakingPrompt: speaking?.Prompt || speaking?.prompt || '',
-      });
+        questions,
+      };
+      dialogSnapshotRef.current = serializeLessonForm(nextForm, lessonId);
+      setForm(nextForm);
       setEditingLessonId(lessonId);
       setIsDialogOpen(true);
     } catch (err) {
@@ -247,50 +467,86 @@ function Lessons({ role }) {
     }
   };
 
-  const closeDialog = () => {
-    setIsDialogOpen(false);
-    setEditingLessonId(null);
-  };
-
-  const updateReading = (idx, field, value) => {
+  const addQuestionTemplate = (type) => {
+    const question = createQuestionFromTemplate(type);
+    if (!question) return;
     setForm((prev) => {
-      const next = { ...prev };
-      const items = [...next.reading];
-      items[idx] = { ...items[idx], [field]: value };
-      next.reading = items;
-      return next;
+      return {
+        ...prev,
+        questions: [...prev.questions, question],
+      };
     });
   };
 
-  const updateOption = (qIdx, optIdx, value, asCorrect = false) => {
+  const removeQuestion = (questionId) => {
+    setForm((prev) => ({
+      ...prev,
+      questions: prev.questions.filter((q) => q.id !== questionId),
+    }));
+  };
+
+  const updateQuestion = (questionId, field, value) => {
     setForm((prev) => {
-      const next = { ...prev };
-      const items = [...next.reading];
-      const q = { ...items[qIdx] };
-      const options = q.options.map((opt, i) => {
-        if (asCorrect) return { ...opt, isCorrect: i === optIdx };
-        return i === optIdx ? { ...opt, text: value } : opt;
-      });
-      q.options = options;
-      items[qIdx] = q;
-      next.reading = items;
-      return next;
+      return {
+        ...prev,
+        questions: prev.questions.map((q) => (q.id === questionId ? { ...q, [field]: value } : q)),
+      };
     });
+  };
+
+  const updateReadingOption = (questionId, optIdx, value, asCorrect = false) => {
+    setForm((prev) => {
+      return {
+        ...prev,
+        questions: prev.questions.map((q) => {
+          if (q.id !== questionId || q.type !== 'reading') return q;
+          const options = q.options.map((opt, i) => {
+            if (asCorrect) return { ...opt, isCorrect: i === optIdx };
+            return i === optIdx ? { ...opt, text: value } : opt;
+          });
+          return { ...q, options };
+        }),
+      };
+    });
+  };
+
+  const updateFillBlankSentence = (questionId, sentence) => {
+    setForm((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q) => {
+        if (q.id !== questionId || q.type !== 'fillBlank') return q;
+        return { ...q, sentence, blankTokenIndexes: [] };
+      }),
+    }));
+  };
+
+  const toggleFillBlankWord = (questionId, wordIndex) => {
+    setForm((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q) => {
+        if (q.id !== questionId || q.type !== 'fillBlank') return q;
+        const exists = (q.blankTokenIndexes || []).includes(wordIndex);
+        const nextIndexes = exists
+          ? q.blankTokenIndexes.filter((idx) => idx !== wordIndex)
+          : [...q.blankTokenIndexes, wordIndex].sort((a, b) => a - b);
+        return { ...q, blankTokenIndexes: nextIndexes };
+      }),
+    }));
   };
 
   const buildQuestionsPayload = (strict) => {
     const questions = [];
+    let order = 1;
 
-    const readingQuestions = form.reading
-      .map((q, idx) => {
-        const trimmedOptions = q.options.map((opt) => ({
+    form.questions.forEach((q, idx) => {
+      if (q.type === 'reading') {
+        const trimmedOptions = (q.options || []).map((opt) => ({
           ...opt,
-          text: opt.text.trim(),
+          text: (opt.text || '').trim(),
         }));
         let filledOptions = trimmedOptions.filter((o) => o.text);
         let correctCount = trimmedOptions.filter((o) => o.isCorrect && o.text).length;
 
-        // If no correct option but we have options, default first filled as correct to avoid loss
         if (filledOptions.length > 0 && correctCount === 0) {
           const firstFilledIdx = trimmedOptions.findIndex((o) => o.text);
           if (firstFilledIdx >= 0) {
@@ -300,63 +556,75 @@ function Lessons({ role }) {
           }
         }
 
-        const hasContent = q.prompt.trim() || q.snippet.trim() || filledOptions.length > 0;
+        const snippet = (q.snippet || '').trim();
+        const prompt = (q.prompt || '').trim();
+        const hasContent = snippet || prompt || filledOptions.length > 0;
+        const isComplete = snippet && prompt && filledOptions.length >= 2 && correctCount === 1;
 
-        const isComplete =
-          q.snippet.trim() &&
-          q.prompt.trim() &&
-          filledOptions.length >= 2 &&
-          correctCount === 1;
-
-        if (!hasContent) return null;
+        if (!hasContent) return;
         if (strict && !isComplete) {
-          throw new Error('Each reading question needs snippet, prompt, 2+ options and exactly one correct.');
+          throw new Error(
+            `Reading question #${idx + 1} needs snippet, prompt, 2+ options and exactly one correct answer.`
+          );
         }
 
-        return {
+        questions.push({
           type: 0,
-          order: idx + 1,
+          order: order++,
           readingSnippet: q.snippet,
           prompt: q.prompt,
           answerOptions: trimmedOptions.map((opt) => ({
             text: opt.text,
             isCorrect: opt.isCorrect,
           })),
-        };
-      })
-      .filter(Boolean);
+        });
+        return;
+      }
 
-    const writingHasContent = !!form.writingPrompt.trim();
-    const speakingHasContent = !!form.speakingPrompt.trim();
+      if (q.type === 'writing' || q.type === 'speaking') {
+        const prompt = (q.prompt || '').trim();
+        if (!prompt) {
+          if (strict) {
+            throw new Error(`${q.type === 'writing' ? 'Writing' : 'Speaking'} question #${idx + 1} needs a prompt.`);
+          }
+          return;
+        }
+        questions.push({
+          type: q.type === 'writing' ? 1 : 2,
+          order: order++,
+          prompt: q.prompt,
+        });
+        return;
+      }
 
-    if (strict && readingQuestions.length !== 2) {
-      throw new Error('Need 2 reading questions to publish.');
-    }
+      if (q.type === 'fillBlank') {
+        const prompt = (q.prompt || '').trim();
+        const sentence = (q.sentence || '').trim();
+        const { maskedSentence, answers } = buildFillBlankTemplate(q.sentence || '', q.blankTokenIndexes || []);
+        const hasContent = prompt || sentence;
+        const isComplete = prompt && sentence && answers.length > 0 && maskedSentence.includes('___');
 
-    if (readingQuestions.length > 0) questions.push(...readingQuestions);
+        if (!hasContent) return;
+        if (strict && !isComplete) {
+          throw new Error(`Fill in the blank question #${idx + 1} needs a prompt, sentence, and at least one selected blank.`);
+        }
+        if (!isComplete) return;
 
-    if (writingHasContent) {
-      questions.push({
-        type: 1,
-        order: 3,
-        prompt: form.writingPrompt,
-      });
-    } else if (strict) {
-      throw new Error('Writing prompt is required to publish.');
-    }
+        questions.push({
+          type: 3,
+          order: order++,
+          prompt,
+          readingSnippet: maskedSentence,
+          answerOptions: answers.map((answer) => ({
+            text: answer.trim(),
+            isCorrect: true,
+          })),
+        });
+      }
+    });
 
-    if (speakingHasContent) {
-      questions.push({
-        type: 2,
-        order: 4,
-        prompt: form.speakingPrompt,
-      });
-    } else if (strict) {
-      throw new Error('Speaking prompt is required to publish.');
-    }
-
-    if (strict && questions.length !== 4) {
-      throw new Error('Need 2 reading, 1 writing, and 1 speaking question to publish.');
+    if (strict && questions.length < MIN_PUBLISH_QUESTIONS) {
+      throw new Error(`Add at least ${MIN_PUBLISH_QUESTIONS} complete questions before publishing.`);
     }
 
     return questions;
@@ -381,12 +649,10 @@ function Lessons({ role }) {
       return;
     }
     if (!form.title.trim()) {
-      setError('Title is required.');
       toast.info('Please add a lesson title before saving.', 'Missing required field');
       return;
     }
     if (!form.dueDate) {
-      setError('Due date is required.');
       toast.info('Please add a due date before saving.', 'Missing required field');
       return;
     }
@@ -481,7 +747,7 @@ function Lessons({ role }) {
     }
   };
 
-  const handleDelete = async (lessonId) => {
+  const handleArchive = async (lessonId) => {
     if (!window.confirm('Archive this lesson?')) return;
     setError('');
     try {
@@ -500,6 +766,24 @@ function Lessons({ role }) {
       console.error(err);
       setError(err.message || 'Failed to archive lesson.');
       toast.error(err.message || 'Failed to archive lesson.');
+    }
+  };
+
+  const handleDeleteDraft = async (lessonId) => {
+    if (!window.confirm('Delete this draft permanently? This cannot be undone.')) return;
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE}/lessons/${lessonId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error((await res.text()) || 'Could not delete draft lesson.');
+      setLessons((prev) => prev.filter((l) => (l.id || l.Id) !== lessonId));
+      toast.success('Draft lesson deleted.');
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Failed to delete draft lesson.');
+      toast.error(err.message || 'Failed to delete draft lesson.');
     }
   };
 
@@ -798,10 +1082,12 @@ function Lessons({ role }) {
                               className="danger"
                               onClick={() => {
                                 setActiveMenu(null);
-                                handleDelete(id);
+                                (String(status || '').toLowerCase() === 'draft'
+                                  ? handleDeleteDraft
+                                  : handleArchive)(id);
                               }}
                             >
-                              Archive
+                              {String(status || '').toLowerCase() === 'draft' ? 'Delete draft' : 'Archive'}
                             </button>
                           </div>
                         ) : null}
@@ -840,14 +1126,14 @@ function Lessons({ role }) {
       </div>
 
       {isDialogOpen ? (
-        <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && !isSaving && closeDialog()}>
+        <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && !isSaving && requestCloseDialog()}>
             <div className="modal" ref={dialogRef}>
               <div className="modal-header">
                 <div>
                   <p className="eyebrow">Lesson</p>
                   <h3>{editingLessonId ? 'Edit lesson' : 'Create new lesson'}</h3>
                 </div>
-              <button type="button" className="ghost-btn small" onClick={closeDialog} disabled={isSaving}>
+              <button type="button" className="ghost-btn small" onClick={requestCloseDialog} disabled={isSaving}>
                 Close
               </button>
             </div>
@@ -897,94 +1183,182 @@ function Lessons({ role }) {
               <div className="question-group">
                 <div className="group-header">
                   <div>
-                    <p className="eyebrow">Reading (2)</p>
-                    <h4>Multiple choice</h4>
+                    <p className="eyebrow">Question templates</p>
+                    <h4>Build lesson structure</h4>
                   </div>
+                  <span className="muted-text">
+                    {form.questions.length} question{form.questions.length === 1 ? '' : 's'} added
+                  </span>
                 </div>
-                {form.reading.map((q, idx) => (
-                  <div className="reading-card" key={`reading-${idx}`}>
-                    <div className="form-row">
-                      <label>Reading snippet #{idx + 1}</label>
-                      <textarea
-                        rows={3}
-                        value={q.snippet}
-                        onChange={(e) => updateReading(idx, 'snippet', e.target.value)}
-                        required
-                      />
+                <p className="muted-text">
+                  Start blank and add templates in any order. You need at least {MIN_PUBLISH_QUESTIONS} complete
+                  questions to publish.
+                </p>
+                <div className="template-library">
+                  {QUESTION_TEMPLATE_LIBRARY.map((template) => (
+                    <button
+                      type="button"
+                      key={template.key}
+                      className="ghost-btn small template-btn"
+                      onClick={() => addQuestionTemplate(template.key)}
+                    >
+                      + {template.label}
+                      <span>{template.subtitle}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {form.questions.length === 0 ? (
+                <div className="question-group">
+                  <div className="muted-text">No question templates added yet.</div>
+                </div>
+              ) : null}
+
+              {form.questions.map((q, idx) => {
+                const title =
+                  q.type === 'fillBlank'
+                    ? 'Fill in the blank'
+                    : q.type.charAt(0).toUpperCase() + q.type.slice(1);
+                return (
+                  <div className="question-group" key={q.id}>
+                    <div className="group-header">
+                      <div>
+                        <p className="eyebrow">
+                          Question {idx + 1} • {title}
+                        </p>
+                        <h4>
+                          {q.type === 'reading'
+                            ? 'Multiple choice'
+                            : q.type === 'writing'
+                              ? 'Essay prompt'
+                              : q.type === 'fillBlank'
+                                ? 'Fill in the blank'
+                              : 'Oral response prompt'}
+                        </h4>
+                      </div>
+                      <button type="button" className="ghost-btn small danger-text-btn" onClick={() => removeQuestion(q.id)}>
+                        Remove
+                      </button>
                     </div>
-                    <div className="form-row">
-                      <label>Question prompt</label>
-                      <input
-                        type="text"
-                        value={q.prompt}
-                        onChange={(e) => updateReading(idx, 'prompt', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="options-grid">
-                      {q.options.map((opt, optIdx) => (
-                        <div className="option-row" key={`opt-${idx}-${optIdx}`}>
+
+                    {q.type === 'reading' ? (
+                      <div className="reading-card">
+                        <div className="form-row">
+                          <label>Reading snippet</label>
+                          <textarea
+                            rows={3}
+                            value={q.snippet}
+                            onChange={(e) => updateQuestion(q.id, 'snippet', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-row">
+                          <label>Question prompt</label>
                           <input
                             type="text"
-                            placeholder={`Option ${optIdx + 1}`}
-                            value={opt.text}
-                            onChange={(e) => updateOption(idx, optIdx, e.target.value, false)}
-                            required
+                            value={q.prompt}
+                            onChange={(e) => updateQuestion(q.id, 'prompt', e.target.value)}
                           />
-                          <label className="radio-label">
-                            <input
-                              type="radio"
-                              name={`correct-${idx}`}
-                              checked={opt.isCorrect}
-                              onChange={() => updateOption(idx, optIdx, opt.text || ' ', true)}
-                            />
-                            Correct
-                          </label>
                         </div>
-                      ))}
-                    </div>
+                        <div className="options-grid">
+                          {q.options.map((opt, optIdx) => (
+                            <div className="option-row" key={`${q.id}-opt-${optIdx}`}>
+                              <input
+                                type="text"
+                                placeholder={`Option ${optIdx + 1}`}
+                                value={opt.text}
+                                onChange={(e) => updateReadingOption(q.id, optIdx, e.target.value, false)}
+                              />
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name={`correct-${q.id}`}
+                                  checked={opt.isCorrect}
+                                  onChange={() => updateReadingOption(q.id, optIdx, opt.text || ' ', true)}
+                                />
+                                Correct
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : q.type === 'fillBlank' ? (
+                      <div className="reading-card fill-blank-card">
+                        <div className="form-row">
+                          <label>Instruction prompt</label>
+                          <textarea
+                            rows={2}
+                            value={q.prompt}
+                            onChange={(e) => updateQuestion(q.id, 'prompt', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-row">
+                          <label>Sentence</label>
+                          <textarea
+                            rows={3}
+                            value={q.sentence || ''}
+                            onChange={(e) => updateFillBlankSentence(q.id, e.target.value)}
+                            placeholder="Type a sentence, then click word chips below to mark blanks."
+                          />
+                        </div>
+                        <div className="form-row">
+                          <label>Select blank word(s)</label>
+                          <div className="fill-blank-token-picker" role="group" aria-label={`Select blanks for question ${idx + 1}`}>
+                            {tokeniseFillBlankSentence(q.sentence || '').length === 0 ? (
+                              <span className="muted-text">Add a sentence first.</span>
+                            ) : (
+                              tokeniseFillBlankSentence(q.sentence || '').map((token, tokenIdx) => {
+                                if (!token.isWord) {
+                                  return (
+                                    <span key={`${q.id}-tok-${tokenIdx}`} className="fill-blank-separator">
+                                      {token.text}
+                                    </span>
+                                  );
+                                }
+                                const isSelected = (q.blankTokenIndexes || []).includes(token.wordIndex);
+                                return (
+                                  <button
+                                    type="button"
+                                    key={`${q.id}-tok-${tokenIdx}`}
+                                    className={`fill-blank-token ${isSelected ? 'selected' : ''}`}
+                                    onClick={() => toggleFillBlankWord(q.id, token.wordIndex)}
+                                  >
+                                    {token.text}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                        <div className="form-row">
+                          <label>Preview</label>
+                          <div className="fill-blank-preview">
+                            {(() => {
+                              const preview = buildFillBlankTemplate(q.sentence || '', q.blankTokenIndexes || []);
+                              return preview.maskedSentence || 'Sentence preview will appear here.';
+                            })()}
+                          </div>
+                          <div className="muted-text">
+                            {(q.blankTokenIndexes || []).length} blank{(q.blankTokenIndexes || []).length === 1 ? '' : 's'} selected
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="form-row">
+                        <label>Prompt</label>
+                        <textarea
+                          rows={3}
+                          value={q.prompt}
+                          onChange={(e) => updateQuestion(q.id, 'prompt', e.target.value)}
+                        />
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-
-              <div className="question-group">
-                <div className="group-header">
-                  <div>
-                    <p className="eyebrow">Writing</p>
-                    <h4>Essay prompt</h4>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <label>Prompt</label>
-                  <textarea
-                    rows={3}
-                    value={form.writingPrompt}
-                    onChange={(e) => setForm((prev) => ({ ...prev, writingPrompt: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="question-group">
-                <div className="group-header">
-                  <div>
-                    <p className="eyebrow">Speaking</p>
-                    <h4>Oral response prompt</h4>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <label>Prompt</label>
-                  <textarea
-                    rows={3}
-                    value={form.speakingPrompt}
-                    onChange={(e) => setForm((prev) => ({ ...prev, speakingPrompt: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
+                );
+              })}
 
               <div className="form-actions">
-                <button type="button" className="ghost-btn" onClick={closeDialog} disabled={isSaving}>
+                <button type="button" className="ghost-btn" onClick={requestCloseDialog} disabled={isSaving}>
                   Cancel
                 </button>
                 <button type="button" className="ghost-btn" onClick={() => saveLesson(false)} disabled={isSaving}>
