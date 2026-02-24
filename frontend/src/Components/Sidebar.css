@@ -10,6 +10,7 @@
   flex-direction: column;
   border-right: 1px solid var(--border-soft);
   transition: width 0.28s ease, box-shadow 0.28s ease;
+  z-index: 50;
 }
 
 .sidebar.collapsed {

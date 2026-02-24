@@ -96,7 +96,7 @@
   padding: 12px 14px;
   color: var(--text-primary);
   animation: fadeInUp 0.16s ease forwards;
-  z-index: 30;
+  z-index: 1000;
 }
 
 .profile-menu.footer {
