@@ -204,6 +204,7 @@ function Lessons({ role }) {
   const [page, setPage] = useState(1);
   const [activeMenu, setActiveMenu] = useState(null);
   const menuRefs = useRef({});
+  const dialogSnapshotRef = useRef(JSON.stringify(createInitialForm()));
 
   const normaliseDate = (dateStr) => {
     if (!dateStr) return null;
@@ -211,16 +212,71 @@ function Lessons({ role }) {
   };
   const toast = useToast();
 
+  const serializeLessonForm = useCallback(
+    (candidateForm, candidateEditingId = editingLessonId) =>
+      JSON.stringify({
+        editingLessonId: candidateEditingId ?? null,
+        title: candidateForm?.title || '',
+        dueDate: candidateForm?.dueDate || '',
+        classIds: [...(candidateForm?.classIds || [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b),
+        questions: (candidateForm?.questions || []).map((q) => {
+          if (q.type === 'reading') {
+            return {
+              type: q.type,
+              snippet: q.snippet || '',
+              prompt: q.prompt || '',
+              options: (q.options || []).map((opt) => ({
+                text: opt.text || '',
+                isCorrect: !!opt.isCorrect,
+              })),
+            };
+          }
+
+          if (q.type === 'fillBlank') {
+            return {
+              type: q.type,
+              prompt: q.prompt || '',
+              sentence: q.sentence || '',
+              blankTokenIndexes: [...(q.blankTokenIndexes || [])].sort((a, b) => a - b),
+            };
+          }
+
+          return {
+            type: q.type,
+            prompt: q.prompt || '',
+          };
+        }),
+      }),
+    [editingLessonId]
+  );
+
+  const hasUnsavedDialogChanges = useCallback(() => {
+    if (!isDialogOpen) return false;
+    return serializeLessonForm(form) !== dialogSnapshotRef.current;
+  }, [form, isDialogOpen, serializeLessonForm]);
+
+  const closeDialog = useCallback(() => {
+    setIsDialogOpen(false);
+    setEditingLessonId(null);
+  }, []);
+
+  const requestCloseDialog = useCallback(() => {
+    if (isSaving) return;
+    if (hasUnsavedDialogChanges() && !window.confirm('Discard your lesson changes?')) {
+      return;
+    }
+    closeDialog();
+  }, [closeDialog, hasUnsavedDialogChanges, isSaving]);
+
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        setIsDialogOpen(false);
-        setEditingLessonId(null);
-      }
+      if (e.key !== 'Escape' || !isDialogOpen || isSaving) return;
+      e.preventDefault();
+      requestCloseDialog();
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
+  }, [isDialogOpen, isSaving, requestCloseDialog]);
 
   useEffect(() => {
     if (!token) {
@@ -291,10 +347,11 @@ function Lessons({ role }) {
   const openCreateDialog = useCallback(() => {
     const initial = createInitialForm();
     if (selectedClassId) initial.classIds = [selectedClassId];
+    dialogSnapshotRef.current = serializeLessonForm(initial, null);
     setForm(initial);
     setEditingLessonId(null);
     setIsDialogOpen(true);
-  }, [selectedClassId]);
+  }, [selectedClassId, serializeLessonForm]);
 
   useEffect(() => {
     const wantsCreate = searchParams.get('create');
@@ -389,14 +446,16 @@ function Lessons({ role }) {
         })
         .filter(Boolean);
 
-      setForm({
+      const nextForm = {
         title: data.Title || data.title || '',
         dueDate: formatInputDate(data.DueDate || data.dueDate),
         classIds: (data.AssignedClassIds || data.assignedClassIds || [])
           .map((id) => Number(id))
           .filter((id) => Number.isFinite(id)),
         questions,
-      });
+      };
+      dialogSnapshotRef.current = serializeLessonForm(nextForm, lessonId);
+      setForm(nextForm);
       setEditingLessonId(lessonId);
       setIsDialogOpen(true);
     } catch (err) {
@@ -406,11 +465,6 @@ function Lessons({ role }) {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const closeDialog = () => {
-    setIsDialogOpen(false);
-    setEditingLessonId(null);
   };
 
   const addQuestionTemplate = (type) => {
@@ -1072,14 +1126,14 @@ function Lessons({ role }) {
       </div>
 
       {isDialogOpen ? (
-        <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && !isSaving && closeDialog()}>
+        <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && !isSaving && requestCloseDialog()}>
             <div className="modal" ref={dialogRef}>
               <div className="modal-header">
                 <div>
                   <p className="eyebrow">Lesson</p>
                   <h3>{editingLessonId ? 'Edit lesson' : 'Create new lesson'}</h3>
                 </div>
-              <button type="button" className="ghost-btn small" onClick={closeDialog} disabled={isSaving}>
+              <button type="button" className="ghost-btn small" onClick={requestCloseDialog} disabled={isSaving}>
                 Close
               </button>
             </div>
@@ -1304,7 +1358,7 @@ function Lessons({ role }) {
               })}
 
               <div className="form-actions">
-                <button type="button" className="ghost-btn" onClick={closeDialog} disabled={isSaving}>
+                <button type="button" className="ghost-btn" onClick={requestCloseDialog} disabled={isSaving}>
                   Cancel
                 </button>
                 <button type="button" className="ghost-btn" onClick={() => saveLesson(false)} disabled={isSaving}>
