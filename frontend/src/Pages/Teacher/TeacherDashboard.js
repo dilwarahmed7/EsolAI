@@ -219,7 +219,7 @@ function TeacherDashboard({ role }) {
       </div>
 
       <div className="quick-links-grid">
-        <div className="quick-link-card lesson-card">
+        <div className="quick-link-card lesson-card" onClick={() => navigate('/lessons')}>
           <div className="quick-link-title">Quick access to lessons</div>
           <div className="quick-link-subtitle">Recently updated</div>
           <div className="lesson-list">
@@ -233,7 +233,10 @@ function TeacherDashboard({ role }) {
                   key={lesson.id || lesson.Id}
                   type="button"
                   className="lesson-item"
-                  onClick={() => navigate('/lessons')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/lessons?edit=${lesson.id || lesson.Id}`);
+                  }}
                 >
                   <div className="lesson-title">{lesson.title || lesson.Title}</div>
                   <div className="lesson-meta">
@@ -251,7 +254,7 @@ function TeacherDashboard({ role }) {
           </Link>
         </div>
 
-        <div className="quick-link-card class-card">
+        <div className="quick-link-card class-card" onClick={() => navigate('/students')}>
           <div className="quick-link-title">Quick view of classes</div>
           <div className="quick-link-subtitle">See classes and manage students</div>
           <div className="class-list">
@@ -267,7 +270,10 @@ function TeacherDashboard({ role }) {
                     key={id}
                     type="button"
                     className="class-item"
-                    onClick={() => navigate(`/students?classId=${id}`)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/students?classId=${id}`);
+                    }}
                   >
                     {cls.name || cls.Name}
                   </button>

@@ -171,11 +171,6 @@ namespace backend.Controllers
                 review.TeacherScore = boundedScore;
                 resp.Score = boundedScore;
 
-                if (resp.LessonQuestion.Type == QuestionType.Writing)
-                    attempt.WritingScore = boundedScore;
-                else if (resp.LessonQuestion.Type == QuestionType.Speaking)
-                    attempt.SpeakingScore = boundedScore;
-
                 review.ApprovedByTeacher = true;
                 review.ReviewedAt = DateTime.UtcNow;
                 resp.NeedsReview = false;
@@ -184,6 +179,12 @@ namespace backend.Controllers
 
             attempt.NeedsTeacherReview = false;
             attempt.TeacherReviewCompleted = true;
+            attempt.WritingScore = attempt.Responses
+                .Where(r => r.LessonQuestion.Type == QuestionType.Writing)
+                .Sum(r => r.FeedbackReview?.TeacherScore ?? r.AiScore ?? r.Score);
+            attempt.SpeakingScore = attempt.Responses
+                .Where(r => r.LessonQuestion.Type == QuestionType.Speaking)
+                .Sum(r => r.FeedbackReview?.TeacherScore ?? r.AiScore ?? r.Score);
             attempt.TotalScore = attempt.ReadingScore + attempt.WritingScore + attempt.SpeakingScore;
 
             await _db.SaveChangesAsync();

@@ -78,6 +78,26 @@ const mapQuestionsFromDetail = (detail) => detail?.Questions || detail?.question
 const mapAttemptMeta = (detail) => detail?.Attempt || detail?.attempt || {};
 const mapLessonMeta = (detail) => detail?.Lesson || detail?.lesson || {};
 
+const countFillBlankPlaceholders = (text) => (String(text || '').split('___').length - 1);
+
+const parseFillBlankResponseText = (value, fallbackCount = 0) => {
+  if (!value) return Array(Math.max(0, fallbackCount)).fill('');
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      const arr = parsed.map((x) => (x == null ? '' : String(x)));
+      if (arr.length < fallbackCount) return [...arr, ...Array(fallbackCount - arr.length).fill('')];
+      return arr;
+    }
+  } catch {
+  }
+  const parts = String(value).split('|');
+  if (parts.length < fallbackCount) return [...parts, ...Array(fallbackCount - parts.length).fill('')];
+  return parts;
+};
+
+const serialiseFillBlankResponse = (answers) => JSON.stringify((answers || []).map((x) => String(x ?? '').trim()));
+
 const buildResponseState = (detail) => {
   const questions = mapQuestionsFromDetail(detail);
   const initial = {};
@@ -88,6 +108,15 @@ const buildResponseState = (detail) => {
     if (type === 'Reading') {
       initial[key] = {
         selectedOptionId: resp?.SelectedOptionId ?? resp?.selectedOptionId ?? null,
+      };
+    } else if (type === 'FillInBlank') {
+      const template = q.ReadingSnippet || q.readingSnippet || '';
+      const blanks = countFillBlankPlaceholders(template);
+      const responseText = resp?.ResponseText ?? resp?.responseText ?? '';
+      const blankAnswers = parseFillBlankResponseText(responseText, blanks);
+      initial[key] = {
+        blankAnswers,
+        responseText: serialiseFillBlankResponse(blankAnswers),
       };
     } else {
       initial[key] = {
@@ -199,7 +228,7 @@ const deriveScores = (detail) => {
     const resp = q.Response || q.response;
     if (!resp) return;
     const type = q.Type || q.type;
-    if (type === 'Reading') {
+    if (type === 'Reading' || type === 'FillInBlank') {
       const score = Number(resp.Score ?? resp.score ?? 0);
       reading += Number.isFinite(score) ? score : 0;
     } else if (type === 'Writing') {
@@ -564,6 +593,25 @@ function MyLessons({ role }) {
     }));
   };
 
+  const handleFillBlankAnswerChange = (questionId, blankIndex, value, expectedCount) => {
+    setResponses((prev) => {
+      const existing = prev[questionId] || {};
+      const blankAnswers = Array.isArray(existing.blankAnswers)
+        ? [...existing.blankAnswers]
+        : Array(Math.max(0, expectedCount)).fill('');
+      while (blankAnswers.length < expectedCount) blankAnswers.push('');
+      blankAnswers[blankIndex] = value;
+      return {
+        ...prev,
+        [questionId]: {
+          ...existing,
+          blankAnswers,
+          responseText: serialiseFillBlankResponse(blankAnswers),
+        },
+      };
+    });
+  };
+
   const buildSubmissionPayload = () => {
     if (!attemptDetail) return [];
     const questions = mapQuestionsFromDetail(attemptDetail);
@@ -574,7 +622,12 @@ function MyLessons({ role }) {
       return {
         lessonQuestionId: key,
         selectedOptionId: type === 'Reading' ? state.selectedOptionId ?? null : null,
-        responseText: type === 'Reading' ? null : state.responseText || '',
+        responseText:
+          type === 'Reading'
+            ? null
+            : type === 'FillInBlank'
+              ? serialiseFillBlankResponse(state.blankAnswers || parseFillBlankResponseText(state.responseText || ''))
+              : state.responseText || '',
       };
     });
   };
@@ -630,6 +683,10 @@ function MyLessons({ role }) {
       const type = q.Type || q.type;
       const resp = responsesPayload[idx];
       if (type === 'Reading') return !resp.selectedOptionId;
+      if (type === 'FillInBlank') {
+        const blanks = parseFillBlankResponseText(resp.responseText || '', countFillBlankPlaceholders(q.ReadingSnippet || q.readingSnippet || ''));
+        return blanks.some((ans) => !String(ans || '').trim());
+      }
       return !(resp.responseText && resp.responseText.trim());
     });
 
@@ -745,6 +802,60 @@ function MyLessons({ role }) {
               );
             })}
           </div>
+        </div>
+      );
+    }
+
+    if (type === 'FillInBlank') {
+      const template = q.ReadingSnippet || q.readingSnippet || '';
+      const parts = String(template || '').split('___');
+      const expectedCount = Math.max(0, parts.length - 1);
+      const currentAnswers = Array.isArray(responses[key]?.blankAnswers)
+        ? responses[key].blankAnswers
+        : parseFillBlankResponseText(responses[key]?.responseText || '', expectedCount);
+      const feedbackAnswers = inFeedback ? (answerOptions || []).map((opt) => opt.Text || opt.text || '') : [];
+      const isCorrect = !!(resp && (resp.IsCorrect ?? resp.isCorrect) === true);
+      const isIncorrect = !!(resp && (resp.IsCorrect ?? resp.isCorrect) === false);
+      const blankScore = Number(resp?.Score ?? resp?.score ?? 0);
+
+      return (
+        <div className="question-card" key={key}>
+          <div className="question-head">
+            <div>
+              <p className="eyebrow">Fill In Blank</p>
+              <h4>{q.Prompt || q.prompt}</h4>
+            </div>
+            {inFeedback && resp ? (
+              <span className={`chip-small ${isCorrect ? 'success' : isIncorrect ? 'danger' : 'info'}`}>
+                {`${Number.isFinite(blankScore) ? blankScore : 0}/${expectedCount}`}
+              </span>
+            ) : null}
+          </div>
+          <div className="fill-blank-student">
+            {parts.map((part, idxPart) => (
+              <React.Fragment key={`${key}-part-${idxPart}`}>
+                <span>{part}</span>
+                {idxPart < expectedCount ? (
+                  <input
+                    type="text"
+                    className={`fill-blank-input ${inFeedback ? 'feedback' : ''}`}
+                    value={currentAnswers[idxPart] || ''}
+                    onChange={(e) => handleFillBlankAnswerChange(key, idxPart, e.target.value, expectedCount)}
+                    disabled={inFeedback}
+                    placeholder={`Blank ${idxPart + 1}`}
+                  />
+                ) : null}
+              </React.Fragment>
+            ))}
+          </div>
+          {inFeedback && isIncorrect && feedbackAnswers.length > 0 ? (
+            <div className="feedback-block">
+              <div className="feedback-highlight corrected">
+                <p className="feedback-label">Correct answer{feedbackAnswers.length === 1 ? '' : 's'}</p>
+                <p className="feedback-content corrected-text">{feedbackAnswers.join(', ')}</p>
+              </div>
+            </div>
+          ) : null}
         </div>
       );
     }
@@ -1287,7 +1398,7 @@ function MyLessons({ role }) {
                 {awaitingReview ? <span className="pill tiny muted">Provisional</span> : null}
               </div>
               <div className="pill-stack">
-                <span className="pill tiny">Reading: {derivedScores.reading}/2</span>
+                <span className="pill tiny">Auto-graded: {derivedScores.reading}</span>
                 <span className="pill tiny">
                   Writing: {derivedScores.writing}/10 {awaitingReview ? '(provisional)' : ''}
                 </span>
@@ -1339,16 +1450,14 @@ function MyLessons({ role }) {
                   <button type="button" className="ghost-btn" onClick={closeModal}>
                     Done
                   </button>
-                  {retryAllowed ? (
-                    <button
-                      type="button"
-                      className="primary-btn"
-                      onClick={() => openAttempt(activeLesson)}
-                      disabled={loadingAttempt}
-                    >
-                      Retry lesson
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    onClick={() => openAttempt(activeLesson)}
+                    disabled={loadingAttempt || !retryAllowed}
+                  >
+                    {retryAllowed ? 'Retry lesson' : 'Retry used'}
+                  </button>
                 </>
               ) : (
                 <>

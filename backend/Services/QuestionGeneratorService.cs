@@ -360,7 +360,8 @@ namespace backend.Services
         {
             sb.AppendLine("1) Spelling:");
             sb.AppendLine("- Each blank replaces ONE misspelled word.");
-            sb.AppendLine("- The sentence must show the incorrect spelling in place of the blank (e.g., '(cofee)').");
+            sb.AppendLine("- The sentence must show the INCORRECT spelling in brackets after the blank (e.g., '(cofee)').");
+            sb.AppendLine("- NEVER put the correct spelling in brackets.");
             sb.AppendLine("- Answers are the correct spellings (letters only, no spaces).");
             sb.AppendLine();
             sb.AppendLine("EXAMPLE:");
@@ -705,7 +706,7 @@ namespace backend.Services
                 "article" => AllAnswersAreArticles(questions),
                 "preposition" => AllAnswersArePrepositions(questions),
                 "punctuation" => AllAnswersArePunctuationStrict(questions, level) && PunctuationPlacementsLookNatural(questions, level),
-                "spelling" => AllAnswersLookLikeSingleWords(questions),
+                "spelling" => AllAnswersLookLikeSingleWords(questions) && SpellingBracketsLookMisspelled(questions),
                 "wordchoice" => AllAnswersLookLikeSingleWords(questions),
                 "modality" => AllAnswersAreModalish(questions),
                 "agreement" => AllAnswersLookLikeAgreementForms(questions),
@@ -733,6 +734,34 @@ namespace backend.Services
         private static bool AllAnswersArePrepositions(List<PracticeQuestion> questions)
         {
             return questions.All(q => q.Answers.All(a => AllowedPrepositions.Contains(a.Trim())));
+        }
+
+        private static bool SpellingBracketsLookMisspelled(List<PracticeQuestion> questions)
+        {
+            static string NormalizeToken(string? value)
+                => Regex.Replace(value ?? string.Empty, @"[^A-Za-z]", "").Trim().ToLowerInvariant();
+
+            foreach (var q in questions)
+            {
+                var bracketTokens = Regex.Matches(q.QuestionText ?? string.Empty, @"\(([^()]+)\)")
+                    .Select(m => NormalizeToken(m.Groups[1].Value))
+                    .Where(t => !string.IsNullOrWhiteSpace(t))
+                    .ToList();
+
+                var answers = (q.Answers ?? new List<string>())
+                    .Select(NormalizeToken)
+                    .Where(t => !string.IsNullOrWhiteSpace(t))
+                    .ToList();
+
+                if (answers.Count == 0 || bracketTokens.Count < answers.Count)
+                    return false;
+
+                if (answers.Any(ans => bracketTokens.Any(tok =>
+                    string.Equals(ans, tok, StringComparison.OrdinalIgnoreCase))))
+                    return false;
+            }
+
+            return true;
         }
 
         private static bool AllAnswersArePunctuationStrict(List<PracticeQuestion> questions, string level)
