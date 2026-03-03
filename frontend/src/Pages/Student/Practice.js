@@ -358,31 +358,41 @@ function Practice({ role }) {
 
   const goToNextPersonalised = () => {
     stopMic();
-    setPersonalised((prevList) => {
-      if (prevList.length === 0) return prevList;
-      const current = prevList[activePersonalisedIndex];
-      if (!current) return prevList;
+    if (personalised.length === 0) return;
 
-      const isCleared = Boolean(answerResult?.success);
-      const nextList = [...prevList];
-      nextList.splice(activePersonalisedIndex, 1);
-
-      if (!isCleared) {
-        nextList.push(current);
-      }
-
-      const maxIndex = Math.max(nextList.length - 1, 0);
-      const nextIndex = Math.min(activePersonalisedIndex, maxIndex);
-      setActivePersonalisedIndex(nextIndex);
+    const isCleared = Boolean(answerResult?.success);
+    if (!isCleared) {
+      setActivePersonalisedIndex((prev) => {
+        if (personalised.length <= 1) return 0;
+        return (prev + 1) % personalised.length;
+      });
       setAnswerResult(null);
       setMicError('');
+      return;
+    }
+
+    setPersonalised((prevList) => {
+      if (prevList.length === 0) return prevList;
+      const nextList = [...prevList];
+      nextList.splice(activePersonalisedIndex, 1);
       return nextList;
     });
+    setActivePersonalisedIndex((prev) => {
+      const nextLength = personalised.length - 1;
+      if (nextLength <= 0) return 0;
+      return Math.min(prev, nextLength - 1);
+    });
+    setAnswerResult(null);
+    setMicError('');
   };
 
   const goToPrevPersonalised = () => {
     stopMic();
-    setActivePersonalisedIndex((prev) => Math.max(prev - 1, 0));
+    setActivePersonalisedIndex((prev) => {
+      const total = personalised.length;
+      if (total <= 1) return 0;
+      return prev > 0 ? prev - 1 : total - 1;
+    });
   };
 
   return (
@@ -578,7 +588,7 @@ function Practice({ role }) {
                           type="button"
                           className="ghost-button"
                           onClick={goToPrevPersonalised}
-                          disabled={answering || activePersonalisedIndex === 0}
+                          disabled={answering || personalised.length <= 1}
                         >
                           Previous
                         </button>
