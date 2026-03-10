@@ -1,0 +1,279 @@
+============================================================
+FYP NLP MODEL EVALUATION
+============================================================
+
+
+OVERVIEW
+------------------------------------------------------------
+Two NLP components were developed and evaluated during the
+project:
+
+1. Grammar Correction Model
+   A sequence-to-sequence T5-base model designed to correct
+   grammatical errors while preserving the meaning of the
+   original sentence.
+
+2. Error Tagging and Micro-Feedback Classifier
+   A classifier that assigns structured error types to each
+   detected correction and generates targeted feedback for
+   learners.
+
+Both models were evaluated independently and then integrated
+to produce an explainable automated feedback system.
+
+
+============================================================
+SECTION 1: INITIAL APPROACH - JFLEG DATASET
+============================================================
+
+The initial grammar correction model was trained using the
+JFLEG dataset, which consists of pairs of sentences:
+
+- Input sentence containing grammatical errors
+- Corrected reference sentence
+
+TEST RESULTS
+------------------------------------------------------------
+
+Total tests executed:               44
+Texts with corrections:             38 / 44
+Texts already correct:              6 / 44
+Total changes made:                 49
+
+Overall score:                      391 / 440
+Average score per text:             8.9 / 10
+Average BLEU Score:                 0.9607
+Average Levenshtein Distance:       0.59
+Average GLEU Score:                 0.9405
+
+
+MANUAL EVALUATION
+------------------------------------------------------------
+
+Across 100 manually tested sentences:
+
+Fully corrected sentences:          ~40%
+Partially corrected sentences:      ~25%
+Not corrected sentences:            ~35%
+
+IDENTIFIED LIMITATIONS
+------------------------------------------------------------
+
+Several issues were identified when using JFLEG:
+
+- Limited dataset size
+- Not tailored to ESOL learners
+- Lack of exam-style prompts
+- No structured error annotations
+
+These limitations resulted in inconsistent correction quality
+for learner writing tasks.
+
+
+============================================================
+SECTION 2: IMPROVED DATASET - CLC FCE
+============================================================
+
+To improve model performance, the grammar correction model
+was retrained using the Cambridge Learner Corpus (CLC) FCE
+dataset.
+
+This dataset contains authentic ESOL learner writing from
+Cambridge FCE exam scripts.
+
+Dataset characteristics include:
+
+- Authentic FCE exam responses (2000–2001)
+- Original student writing
+- Gold-standard corrected text
+- Detailed grammatical error annotations
+- Demographic information (first language and age group)
+
+Because this dataset contains real learner errors and exam
+prompts, it is significantly better aligned with the target
+users of the EsolAI platform.
+
+
+============================================================
+SECTION 3: ERROR-TAGGING CLASSIFIER EVALUATION
+============================================================
+
+The second model classifies each correction into a structured
+error category to allow explainable feedback.
+
+DATASET
+------------------------------------------------------------
+
+Scripts parsed:                     2,479
+Annotated errors extracted:         7,654
+
+Training split:                     90%
+Validation split:                   10%
+
+
+CLASSIFICATION PERFORMANCE
+------------------------------------------------------------
+
+Accuracy:                           74%
+Macro F1 Score:                     0.73
+Weighted F1 Score:                  0.74
+
+
+PER-CLASS PERFORMANCE HIGHLIGHTS
+------------------------------------------------------------
+
+Missing Word                        F1 = 0.94
+Prepositions                        F1 = 0.94
+Verb Tense / Form                   F1 = 0.87
+Articles / Determiners              F1 = 0.67
+Word Order                          F1 = 0.47
+
+
+INTERPRETATION
+------------------------------------------------------------
+
+The classifier performs strongly on structural grammatical
+errors such as verb tense, missing words, and incorrect
+prepositions.
+
+Lower performance is observed for word order errors, which
+are more context dependent and appear less frequently in the
+dataset, leading to class imbalance.
+
+
+============================================================
+SECTION 4: INTEGRATED EXPLAINABLE FEEDBACK PIPELINE
+============================================================
+
+When both NLP components are combined, the system generates
+explainable feedback through the following process:
+
+1. The grammar correction model produces a corrected version
+   of the student sentence.
+
+2. A token-level diff identifies changes between the original
+   and corrected sentence.
+
+3. The classifier assigns an error category to each detected
+   correction.
+
+4. Targeted micro-feedback is generated to explain the error.
+
+
+============================================================
+SECTION 5: EXAMPLE MODEL INPUT AND OUTPUT
+============================================================
+
+Example request sent to the NLP correction API:
+
+
+INPUT
+------------------------------------------------------------
+
+{
+  "student_input": "Sometime bus take too long. They should have more driver.",
+  "prompt": "A city council wants to improve public transport. Write about problems with public transport and suggest improvements.",
+  "max_length": 256
+}
+
+
+MODEL OUTPUT
+------------------------------------------------------------
+
+{
+  "original": "Sometime bus take to long. They should have more driver.",
+  "corrected": "Sometimes the bus takes to long. They should have more drivers.",
+  "prompt": "A city council wants to improve public transport. Write about problems with public transport and suggest improvements.",
+  "num_errors": 3,
+  "score": 7,
+  "changes": [
+    {
+      "type": "replaced",
+      "from": "Sometime",
+      "to": "Sometimes the",
+      "error_type": "other",
+      "micro_feedback": "Review this part for grammar/usage."
+    },
+    {
+      "type": "replaced",
+      "from": "take",
+      "to": "takes",
+      "error_type": "agreement/plural",
+      "micro_feedback": "Check agreement (subject–verb and singular/plural nouns). For 3rd person singular, use 'does/has/is' and add -s where needed."
+    },
+    {
+      "type": "replaced",
+      "from": "driver",
+      "to": "drivers",
+      "error_type": "punctuation",
+      "micro_feedback": "Fix punctuation (commas, full stops, capitalization)."
+    }
+  ],
+  "has_errors": true
+}
+
+
+INTERPRETATION
+------------------------------------------------------------
+
+The example demonstrates how the system:
+
+- Corrects grammatical errors in learner writing
+- Detects specific changes between the original and corrected
+  sentence
+- Assigns structured error categories
+- Generates targeted micro-feedback for the learner
+
+This allows the platform to provide automated yet explainable
+feedback rather than simply returning a corrected sentence.
+
+
+============================================================
+SECTION 6: PRACTICAL SYSTEM PERFORMANCE
+============================================================
+
+When deployed within the EsolAI platform, the integrated
+system demonstrated the following approximate performance:
+
+- ~80% full correction accuracy
+- 74% error classification accuracy
+- Structured micro-feedback for each correction
+
+
+============================================================
+SECTION 7: HUMAN-IN-THE-LOOP MODERATION
+============================================================
+
+To ensure reliability in educational settings, the platform
+implements a teacher review step.
+
+Key features:
+
+- AI corrections are not automatically final
+- Teachers review feedback before marks are released
+- Teachers can modify corrections if necessary
+
+This hybrid human-AI approach:
+
+- increases trust in automated feedback
+- mitigates edge-case model errors
+- ensures pedagogical accuracy.
+
+
+============================================================
+SECTION 8: LIMITATIONS
+============================================================
+
+Grammar correction model limitations:
+
+- Occasional over-correction or under-correction
+- Performance may depend on prompt structure
+
+Error classification model limitations:
+
+- Reduced performance for rare error categories
+- Dependent on the quality of diff detection
+
+Despite these limitations, the integrated system provides
+explainable feedback while significantly reducing teacher
+marking workload.
