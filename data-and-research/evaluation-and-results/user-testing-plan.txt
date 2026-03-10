@@ -1,0 +1,121 @@
+User Testing Plan:
+
+Goals of the testing:
+
+Primary goals:
+
+- Validate that teachers can create, assign, and manage lessons/classes without confusion
+- Validate students can complete lessons and understand feedback (instant and teacher approved AI feedback).
+- Check that the review workflow is clear and not too time consuming as main motivation of this application is to reduce teacher workload and provide very fast feedback to students
+
+Secondary goals:
+
+- Practice feature usefulness: do students understand how to use it and do they think it helps
+- The usefulness of the progress age, do they understand the metrics and does it help motivate them.
+- Surface bugs/edge cases: auth, permissions, lesson states, retry rules etc.
+
+Participants:
+Teachers:
+
+- Mumena Begum - ESOL Teacher for Test class 1
+- Husna Khatun - ESOL Teacher for Test class 2
+
+Students:
+Test class 1
+
+- Laily Begum - Bengali - C1 - 45
+- Armaan Khan, Pakistani/Urdu - B2 - 35
+
+Test Class 2
+
+- Shazia Kaur - Hindi - A1 - 38
+- Arati Islam - Bengali - B1 - 47
+- Hafizur Rahman - Bengali - B1 – 41
+
+Testing method:
+
+Session format:
+
+- 10 mins: introduction, consent, explain.
+- 30-40 mins: Tasks
+- 5-10 mins: Survery/Interview
+
+Capturing feedback:
+
+- Ask them to loink aloud when using the application
+- Anything they like don’t like, anything they struggle with
+- Note all of this down per user
+
+Testing tasks:
+
+Teacher tasks:
+
+- Teacher registration
+- Teacher adds students by email to relevant classes
+- Teacher can view list of students in each class
+- Teacher creates a couple of lessons and assigns to classes
+- Teacher can save lesson as a draft and come back to it later
+- Teacher can customise what type of questions they want to add
+- Teacher cannot publish lesson unless all requirements met, 4 min questions, due date, lesson title etc.
+- Teachers can edit an existing lesson
+- Teachers can delete a draft lesson
+- Filters/search in lessons data grid works
+- Teachers can view student’s average marks and proficiency levels
+- Sort and filtering works on student data grid
+- Update a student’s proficiency level
+- Teachers can open review tab and see completed submissions
+- Teacher can edit AI feedback and score
+
+Success criteria:
+
+- Completion of tasks without help
+- Teacher understands statuses
+- Review process is quick and makes their life much easier rather than having to mark things manually all the time.
+
+Student tasks:
+
+- Student registration works
+- Students can view the list of their lessons assigned to them by the teacher in to-do
+- Students can view their past lessons in completed.
+- Students can complete a lesson
+- Students can start a lesson and continue later
+- Students understand the feedback structure of the AI feedback.
+- Students understand how the scoring works.
+- Students understand that writing and speaking feedback is pending teacher approval
+- After teacher approval students find and view feedback.
+- Students can retry a completed lesson once
+- Students can view both first attempt feedback and retry attempt feedback
+- Students open the practice tab and start a common error practice lesson
+- Students understand these questions are common errors for their L1.
+- Students open the user-specific errors which show questions they have not got 100% on in their completed lessons.
+- Students find average score/ proficiency level / streak in the progress tab.
+- Students can interpret graphs and motivates them to improve.
+
+Success criteria:
+
+- Students can finish a lesson without getting stuck
+- Students understand feedback timing and where to find it
+- Practice is perceived as helpful, not confusing
+
+Metrics to collect:
+Quantitative:
+
+- Task completion rate
+- Time on task
+- Error rate
+- Number of help prompts needed
+- Post task rating of ease (1-5)
+
+Qualitative:
+
+- Confusion points
+- Feature value perception
+- Trust in AI feedback
+- Suggested improvements
+
+Edge cases to test:
+
+- Role permissions – student cannot access teacher routes
+- Lesson status bugs: draft lessons not visible to students
+- Review gating: Students cannot get a confirmed score until teacher review
+- Retry only allowed once
