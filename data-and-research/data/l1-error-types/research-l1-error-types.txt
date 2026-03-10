@@ -1,5 +1,5 @@
 This research will allow me to collate a csv file to rank different error types for different first languages of ESOL students. The purpose of this csv file is to aid the creation of practice lessons. These practice lessons will look
-at the users first lnaguage and produce 3 questions which will assess the given error type. This will be displayed for each of the 5 top error types for that first language.
+at the users first language and produce 3 questions which will assess the given error type. This will be displayed for each of the 5 top error types for that first language.
 
 In the FCE dataset there are already a few languages where the error types are shown when made. So using script I collated the top 5 error types for each of the languages in the dataset.
 For example, for each student where the first language was Spanish here are the most common error types with their given weights:

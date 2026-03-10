@@ -1,0 +1,135 @@
+USER TESTING RESULTS AND EVALUATION
+
+User testing was conducted with two ESOL teachers and five ESOL students across two classes. 
+Participants were asked to complete a series of tasks designed to evaluate teacher lesson 
+management workflows, student lesson completion, and the AI-assisted feedback system. 
+Both quantitative metrics and qualitative feedback were collected.
+
+The testing aimed to evaluate usability, clarity of feedback, and overall usefulness 
+to both teachers and students.
+
+
+PARTICIPANT INFORMATION
+
++------------------+---------+---------+-------+-----+
+| Participant      | Role    | L1      | Level | Age |
++------------------+---------+---------+-------+-----+
+| Mumena Begum     | Teacher | Bengali |   -   | 44  |
+| Husna Khatun     | Teacher | Bengali |   -   | 41  |
+| Laily Begum      | Student | Bengali |  C1   | 45  |
+| Armaan Khan      | Student | Urdu    |  B2   | 35  |
+| Shazia Kaur      | Student | Hindi   |  A1   | 38  |
+| Arati Islam      | Student | Bengali |  B1   | 47  |
+| Hafizur Rahman   | Student | Bengali |  B1   | 41  |
++------------------+---------+---------+-------+-----+
+
+
+TEACHER TASK RESULTS
+
++---------------------------+----------------+----------+----------------------------------------------+
+| Task                      | Completion     | Avg Time | Issues Observed                              |
+|                           | Rate           |          |                                              |
++---------------------------+----------------+----------+----------------------------------------------+
+| Register teacher account  | 2/2            | 1 min    | None                                         |
+| Add students to class     | 2/2            | 2 min    | None                                         |
+| Create lesson             | 2/2            | 5 min    | One teacher requested another question type  |
+| Save draft lesson         | 2/2            | 30 sec   | None                                         |
+| Assign lesson to class    | 2/2            | 1 min    | None                                         |
+| Review AI feedback        | 2/2            | 3 min    | Teachers appreciated editing ability         |
++---------------------------+----------------+----------+----------------------------------------------+
+
+Teachers were able to complete all core tasks without assistance. The lesson creation workflow 
+was generally intuitive. Both teachers highlighted the review interface as being very valuable, 
+because normally they would manually mark students’ text one thing at a time, but now they are 
+just reviewing what the AI has generated, which is most likely correct most of the time. 
+This reduces a lot of their time spent on marking, which was one of the main motivations 
+of the application.
+
+
+STUDENT TASK RESULTS
+
++--------------------------------------+----------------+----------+----------------------------------------------------+
+| Task                                 | Completion     | Avg Time | Observations                                       |
+|                                      | Rate           |          |                                                    |
++--------------------------------------+----------------+----------+----------------------------------------------------+
+| Register account                     | 5/5            | 2 min    | No issues                                          |
+| Find assigned lesson                 | 5/5            | 30 sec   | Clear layout                                       |
+| Complete lesson                      | 5/5            | 12 min   | Writing tasks took longest                         |
+| Understand instant feedback          | 4/5            | -        | One student initially confused                     |
+| Understand teacher-approved feedback | 4/5            | -        | One student confused about mark change after review|
+| Retry lesson                         | 5/5            | 10 min   | Feature understood easily                          |
+| Use practice features                | 4/5            | 15 min   | One student unsure about repeating questions       |
+| Understand progress page             | 3/5            | -        | Some students did not understand the graphs        |
++--------------------------------------+----------------+----------+----------------------------------------------------+
+
+Students were generally able to complete lessons without assistance. Instant feedback for 
+multiple choice questions and fill-in-the-gap questions was well understood, while AI-generated 
+feedback for writing and speaking questions required brief explanation for one participant. 
+
+The retry feature was well received, with several students expressing motivation to improve 
+their score. The progress tab was something most students said they would like to be improved 
+as it did not have many motivating aspects to it.
+
+
+TEACHER FEEDBACK
+
+Teachers reported that:
+- The application was very easy to use.
+- Creating lessons and reviewing student writing was straightforward.
+- The dashboard effectively centralises all parts of the application.
+- The biggest advantage is the time saved compared to giving paper homework.
+
+Suggested improvements:
+- More metrics for each student.
+- Ability to see which student has submitted work for feedback.
+- Listening questions workflow
+
+
+STUDENT FEEDBACK
+
+Students reported that:
+- The application workflow is easy to understand.
+- The dashboard is clear and easy to use.
+- Lessons are easy to complete and feedback is understandable.
+- The practice page is helpful because they do not have to wait for teachers to upload lessons.
+- The progress tab provides some motivation.
+
+Suggested improvements:
+- The progress tab should include better motivational metrics.
+
+Bugs found:
+-	First attempt and retry functionality not working as expected
+-	Average score inconsistency across pages
+-	Spelling question generation not as expected
+-	Previous question button not working on practice page
+-	Context menu appears below components when sidebar collapsed
+
+
+OVERALL EVALUATION
+
+Overall, user testing indicated that both teachers and students were able to use the system 
+successfully with minimal assistance. The hybrid AI–teacher feedback model was perceived as 
+particularly valuable by teachers because it reduces marking time while still allowing them 
+to maintain oversight of student performance.
+
+Teachers would like to see more detailed metrics for each student to better judge their progress, 
+while students appreciated the AI marking system because it provides instant feedback and helps 
+them understand how they performed.
+
+Students also responded positively to the retry and practice functionality, as these features 
+encourage continued improvement. However, they would prefer the progress page to include more 
+motivational elements.
+
+
+Limitations of Testing:
+Despite positive results, the testing had several limitations. The participant group was relatively
+small and consisted of only ESOL students of a few different languages. As a result, results may 
+not generalise larger classroom environments or learners from different backgrounds. Additionally
+testing sessions were conducted in a controlled environment rather than during real classroom usage
+over an extended period. Also, this was tested quite quickly and not over a few weeks where users may
+have found other things to improve on.
+
+Improvements made after testing:
+Several improvements were implemented following testing. An explanation was added to the practice page
+to explain the two different practice types. Fixed the bugs that came noticed like how the average score
+on one page was not matching on the other, or how the retry logic was not fully working etc.
