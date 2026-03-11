@@ -30,8 +30,13 @@ namespace backend.Models.DTOs
         public int AttemptId { get; set; }
         public DateTime? SubmittedAt { get; set; }
         public int ReadingScore { get; set; }
+        public int FillInBlankScore { get; set; }
         public int WritingScore { get; set; }
         public int SpeakingScore { get; set; }
+        public int ReadingOutOf { get; set; }
+        public int FillInBlankOutOf { get; set; }
+        public int WritingOutOf { get; set; }
+        public int SpeakingOutOf { get; set; }
         public int TotalScore { get; set; }
         public bool NeedsTeacherReview { get; set; }
         public bool TeacherReviewCompleted { get; set; }
