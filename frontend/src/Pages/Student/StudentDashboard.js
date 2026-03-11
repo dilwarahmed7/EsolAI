@@ -28,8 +28,13 @@ const normaliseAttempt = (raw) => {
   return {
     totalScore: raw.totalScore ?? raw.TotalScore ?? null,
     readingScore: raw.readingScore ?? raw.ReadingScore ?? null,
+    fillInBlankScore: raw.fillInBlankScore ?? raw.FillInBlankScore ?? null,
     writingScore: raw.writingScore ?? raw.WritingScore ?? null,
     speakingScore: raw.speakingScore ?? raw.SpeakingScore ?? null,
+    readingOutOf: raw.readingOutOf ?? raw.ReadingOutOf ?? null,
+    fillInBlankOutOf: raw.fillInBlankOutOf ?? raw.FillInBlankOutOf ?? null,
+    writingOutOf: raw.writingOutOf ?? raw.WritingOutOf ?? null,
+    speakingOutOf: raw.speakingOutOf ?? raw.SpeakingOutOf ?? null,
     submittedAt: raw.submittedAt || raw.SubmittedAt,
   };
 };
@@ -190,9 +195,10 @@ function StudentDashboard({ role }) {
 
   const bestLearningTypesData = useMemo(() => {
     const totals = {
-      Reading: { score: 0, count: 0, outOf: 2 },
-      Writing: { score: 0, count: 0, outOf: 10 },
-      Speaking: { score: 0, count: 0, outOf: 10 },
+      Reading: { score: 0, outOf: 0 },
+      'Fill in the blanks': { score: 0, outOf: 0 },
+      Writing: { score: 0, outOf: 0 },
+      Speaking: { score: 0, outOf: 0 },
     };
 
     lessonsWithStatus.forEach((lesson) => {
@@ -201,22 +207,25 @@ function StudentDashboard({ role }) {
 
       if (typeof attempt.readingScore === 'number') {
         totals.Reading.score += attempt.readingScore;
-        totals.Reading.count += 1;
+        totals.Reading.outOf += Math.max(0, Number(attempt.readingOutOf) || 0);
+      }
+      if (typeof attempt.fillInBlankScore === 'number') {
+        totals['Fill in the blanks'].score += attempt.fillInBlankScore;
+        totals['Fill in the blanks'].outOf += Math.max(0, Number(attempt.fillInBlankOutOf) || 0);
       }
       if (typeof attempt.writingScore === 'number') {
         totals.Writing.score += attempt.writingScore;
-        totals.Writing.count += 1;
+        totals.Writing.outOf += Math.max(0, Number(attempt.writingOutOf) || 0);
       }
       if (typeof attempt.speakingScore === 'number') {
         totals.Speaking.score += attempt.speakingScore;
-        totals.Speaking.count += 1;
+        totals.Speaking.outOf += Math.max(0, Number(attempt.speakingOutOf) || 0);
       }
     });
 
-    return Object.entries(totals).map(([type, { score, count, outOf }]) => {
-      if (!count || !outOf) return { type, percent: 0 };
-      const avg = score / count;
-      const percent = Math.round((avg / outOf) * 100);
+    return Object.entries(totals).map(([type, { score, outOf }]) => {
+      if (!outOf) return { type, percent: 0 };
+      const percent = Math.round((score / outOf) * 100);
       return { type, percent };
     });
   }, [lessonsWithStatus]);

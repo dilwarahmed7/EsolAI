@@ -631,17 +631,41 @@ namespace backend.Controllers
                 });
             }
 
+            int GetScoreOutOf(QuestionType type)
+            {
+                var responses = attempt.Responses
+                    .Where(r => r.LessonQuestion.Type == type)
+                    .ToList();
+
+                if (responses.Count == 0)
+                    return 0;
+
+                return responses.Sum(r => GetQuestionScoreOutOf(type, r.LessonQuestion.ReadingSnippet));
+            }
+
+            var reading = ResolveScore(QuestionType.Reading, attempt.ReadingScore);
+            var fillInBlank = ResolveScore(QuestionType.FillInBlank, 0);
             var writing = ResolveScore(QuestionType.Writing, attempt.WritingScore);
             var speaking = ResolveScore(QuestionType.Speaking, attempt.SpeakingScore);
-            var total = attempt.ReadingScore + writing + speaking;
+            var total = reading + fillInBlank + writing + speaking;
+
+            var readingOutOf = GetScoreOutOf(QuestionType.Reading);
+            var fillInBlankOutOf = GetScoreOutOf(QuestionType.FillInBlank);
+            var writingOutOf = GetScoreOutOf(QuestionType.Writing);
+            var speakingOutOf = GetScoreOutOf(QuestionType.Speaking);
 
             return new LessonAttemptSummaryDto
             {
                 AttemptId = attempt.Id,
                 SubmittedAt = attempt.SubmittedAt,
-                ReadingScore = attempt.ReadingScore,
+                ReadingScore = reading,
+                FillInBlankScore = fillInBlank,
                 WritingScore = writing,
                 SpeakingScore = speaking,
+                ReadingOutOf = readingOutOf,
+                FillInBlankOutOf = fillInBlankOutOf,
+                WritingOutOf = writingOutOf,
+                SpeakingOutOf = speakingOutOf,
                 TotalScore = total,
                 NeedsTeacherReview = attempt.NeedsTeacherReview,
                 TeacherReviewCompleted = attempt.TeacherReviewCompleted,
