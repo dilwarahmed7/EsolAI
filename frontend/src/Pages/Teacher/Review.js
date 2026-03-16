@@ -39,21 +39,23 @@ const normaliseChange = (raw = {}, hidden = false) => ({
   hidden,
 });
 
-const buildReviewState = (item) => {
+const buildReviewState = (items) => {
   const form = {};
   const changes = {};
-  if (!item || !item.responses) return { form, changes };
-  item.responses.forEach((resp) => {
-    const rawFeedback = resp.teacherFeedback || '';
-    const hideAll = feedbackHasHideMarker(rawFeedback);
-    const cleanedFeedback = stripHideMarker(rawFeedback);
-    form[resp.questionResponseId] = {
-      correctedText: resp.aiCorrections || '',
-      teacherFeedback: cleanedFeedback,
-      teacherScore: resp.teacherScore ?? (typeof resp.aiScore === 'number' ? resp.aiScore : ''),
-    };
-    const parsedChanges = parseChangesFromFeedback(resp.aiFeedback || '');
-    changes[resp.questionResponseId] = parsedChanges.map((c) => normaliseChange(c, hideAll));
+  if (!Array.isArray(items)) return { form, changes };
+  items.forEach((item) => {
+    (item.responses || []).forEach((resp) => {
+      const rawFeedback = resp.teacherFeedback || '';
+      const hideAll = feedbackHasHideMarker(rawFeedback);
+      const cleanedFeedback = stripHideMarker(rawFeedback);
+      form[resp.questionResponseId] = {
+        correctedText: resp.aiCorrections || '',
+        teacherFeedback: cleanedFeedback,
+        teacherScore: resp.teacherScore ?? (typeof resp.aiScore === 'number' ? resp.aiScore : ''),
+      };
+      const parsedChanges = parseChangesFromFeedback(resp.aiFeedback || '');
+      changes[resp.questionResponseId] = parsedChanges.map((c) => normaliseChange(c, hideAll));
+    });
   });
   return { form, changes };
 };
@@ -66,9 +68,10 @@ function Review({ role }) {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewForm, setReviewForm] = useState({});
   const [reviewChanges, setReviewChanges] = useState({});
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const toast = useToast();
 
-  const loadReviewQueue = useCallback(async () => {
+  const loadReviewQueue = useCallback(async (preferredReviewId = null) => {
     if (!token) return;
     setReviewLoading(true);
     setReviewError('');
@@ -99,14 +102,22 @@ function Review({ role }) {
           })),
         }))
       : [];
-    setReviewQueue(list);
-    const built = buildReviewState(list[0]);
-    setReviewForm(built.form);
-    setReviewChanges(built.changes);
-  } catch (err) {
-    console.error(err);
-    setReviewError(err.message || 'Failed to load review queue.');
-    toast.error(err.message || 'Failed to load review queue.');
+      setReviewQueue(list);
+      const built = buildReviewState(list);
+      setReviewForm(built.form);
+      setReviewChanges(built.changes);
+      setCurrentReviewIndex((prev) => {
+        if (list.length === 0) return 0;
+        if (preferredReviewId != null) {
+          const preferredIndex = list.findIndex((item) => item.id === preferredReviewId);
+          if (preferredIndex >= 0) return preferredIndex;
+        }
+        return Math.min(prev, list.length - 1);
+      });
+    } catch (err) {
+      console.error(err);
+      setReviewError(err.message || 'Failed to load review queue.');
+      toast.error(err.message || 'Failed to load review queue.');
     } finally {
       setReviewLoading(false);
     }
@@ -152,7 +163,7 @@ function Review({ role }) {
   };
 
   const submitReview = async () => {
-    const current = reviewQueue[0];
+    const current = reviewQueue[currentReviewIndex];
     if (!current || !token) return;
     setReviewSaving(true);
     setReviewError('');
@@ -192,7 +203,8 @@ function Review({ role }) {
       });
       if (!res.ok) throw new Error((await res.text()) || 'Failed to submit review.');
 
-      await loadReviewQueue();
+      const nextReview = reviewQueue[currentReviewIndex + 1] || reviewQueue[currentReviewIndex - 1] || null;
+      await loadReviewQueue(nextReview?.id ?? null);
       toast.success('Review submitted.');
     } catch (err) {
       console.error(err);
@@ -202,6 +214,22 @@ function Review({ role }) {
       setReviewSaving(false);
     }
   };
+
+  const goToPreviousReview = () => {
+    setCurrentReviewIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const goToNextReview = async () => {
+    if (currentReviewIndex < reviewQueue.length - 1) {
+      setCurrentReviewIndex((prev) => prev + 1);
+      return;
+    }
+    await loadReviewQueue(reviewQueue[currentReviewIndex]?.id ?? null);
+  };
+
+  const activeReview = reviewQueue[currentReviewIndex] || null;
+  const hasPreviousReview = currentReviewIndex > 0;
+  const hasNextReview = currentReviewIndex < reviewQueue.length - 1;
 
   return (
     <PageLayout title={null} role={role}>
@@ -231,7 +259,9 @@ function Review({ role }) {
               <p className="section-subtitle">
                 {reviewLoading
                   ? 'Loading…'
-                  : `${reviewQueue.length} submission${reviewQueue.length === 1 ? '' : 's'} waiting`}
+                  : `${reviewQueue.length} submission${reviewQueue.length === 1 ? '' : 's'} waiting${
+                      reviewQueue.length > 0 ? ` • ${currentReviewIndex + 1} of ${reviewQueue.length}` : ''
+                    }`}
               </p>
             </div>
           </div>
@@ -248,7 +278,8 @@ function Review({ role }) {
             </div>
           ) : (
             (() => {
-              const item = reviewQueue[0];
+              const item = activeReview;
+              if (!item) return null;
               return (
                 <div className="review-panel">
                   <div className="review-meta">
@@ -418,8 +449,23 @@ function Review({ role }) {
                   </div>
 
                   <div className="form-actions">
-                    <button type="button" className="ghost-btn" onClick={loadReviewQueue} disabled={reviewSaving}>
-                      Skip/refresh
+                    {hasPreviousReview ? (
+                      <button
+                        type="button"
+                        className="ghost-btn"
+                        onClick={goToPreviousReview}
+                        disabled={reviewSaving || reviewLoading}
+                      >
+                        Previous
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={goToNextReview}
+                      disabled={reviewSaving || reviewLoading || (!hasNextReview && reviewQueue.length === 0)}
+                    >
+                      {hasNextReview ? 'Skip/next' : 'Refresh queue'}
                     </button>
                     <button type="button" className="primary-btn" onClick={submitReview} disabled={reviewSaving}>
                       {reviewSaving ? 'Saving…' : 'Submit review'}
