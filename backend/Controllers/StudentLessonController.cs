@@ -610,6 +610,8 @@ namespace backend.Controllers
 
         private LessonAttemptSummaryDto BuildAttemptSummary(LessonAttempt attempt)
         {
+            var hasAnyResponses = attempt.Responses.Count > 0;
+
             int ResolveScore(QuestionType type, int fallback)
             {
                 var responses = attempt.Responses
@@ -617,7 +619,7 @@ namespace backend.Controllers
                     .ToList();
 
                 if (responses.Count == 0)
-                    return fallback;
+                    return hasAnyResponses ? 0 : fallback;
 
                 return responses.Sum(response =>
                 {
@@ -633,6 +635,9 @@ namespace backend.Controllers
 
             int GetScoreOutOf(QuestionType type)
             {
+                if (!hasAnyResponses)
+                    return 0;
+
                 var responses = attempt.Responses
                     .Where(r => r.LessonQuestion.Type == type)
                     .ToList();
