@@ -61,7 +61,7 @@ function Practice({ role }) {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
-    recognition.lang = 'en-US';
+    recognition.lang = 'en-GB';
 
     recognition.onresult = (event) => {
       const current = personalised[activePersonalisedIndex];
