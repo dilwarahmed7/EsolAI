@@ -22,6 +22,13 @@ const STATUS_COLORS = {
   Late: '#ef4444',
 };
 
+const isWithinRange = (timeSource, windowMs, now = Date.now()) => {
+  if (!timeSource) return false;
+  const time = new Date(timeSource).getTime();
+  if (!Number.isFinite(time)) return false;
+  return now - time <= windowMs;
+};
+
 const ProgressCard = ({ icon, label, value, description }) => (
   <div className="progress-card">
     <div className="progress-icon">{icon}</div>
@@ -296,14 +303,12 @@ function Progress({ role }) {
     const windowMs = learningRange === '7d' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
     const now = Date.now();
     return lessonsWithStatus.filter((lesson) => {
+      if (lesson.computedStatus !== 'Completed') {
+        return true;
+      }
+
       const attempt = lesson.originalAttempt || lesson.latestAttempt;
-      const submittedAt = attempt?.submittedAt;
-      const fallbackTime = lesson.updatedAt || lesson.dueDate;
-      const timeSource = submittedAt || fallbackTime;
-      if (!timeSource) return false;
-      const time = new Date(timeSource).getTime();
-      if (!Number.isFinite(time)) return false;
-      return now - time <= windowMs;
+      return isWithinRange(attempt?.submittedAt, windowMs, now);
     });
   }, [learningRange, lessonsWithStatus]);
 
