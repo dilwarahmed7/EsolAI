@@ -214,7 +214,11 @@ function Practice({ role }) {
                   ? 'Reading'
                   : rawType === 1
                   ? 'Writing'
-                  : 'Speaking'
+                  : rawType === 2
+                  ? 'Speaking'
+                  : rawType === 3
+                  ? 'FillInBlank'
+                  : ''
                 : rawType || '';
             return {
               questionId: q.questionId || q.QuestionId,
@@ -299,6 +303,14 @@ function Practice({ role }) {
       setAnswerResult({ success: false, message: 'Please choose an option before checking.' });
       toast.info('Please choose an option before checking.');
       return;
+    }
+    if (type === 'FillInBlank') {
+      const answers = respState.blankAnswers || [];
+      if (answers.length === 0 || answers.some(a => !a || !a.trim())) {
+        setAnswerResult({ success: false, message: 'Please fill in all blanks before checking.' });
+        toast.info('Please fill in all blanks before checking.');
+        return;
+      }
     }
     if ((type === 'Writing' || type === 'Speaking') && !(respState.responseText || '').trim()) {
       setAnswerResult({ success: false, message: 'Please enter a response before checking.' });
@@ -490,7 +502,7 @@ function Practice({ role }) {
       </div>
 
       {showPersonalised ? (
-        <div className="practice-modal-backdrop" onClick={(e) => e.target === e.currentTarget && !answering && closePersonalised()}>
+        <div className="practice-modal-backdrop">
           <div className="practice-modal">
             <div className="modal-header">
               <div>
@@ -553,30 +565,69 @@ function Practice({ role }) {
                         ))}
                       </div>
                     </>
-                  ) : (
-                    <div className="text-response">
-                      <textarea
-                        rows={4}
-                        value={responses[currentPersonalised.questionId]?.responseText || ''}
-                        onChange={(e) =>
-                          updateResponse(currentPersonalised.questionId, { responseText: e.target.value })
-                        }
-                        placeholder="Type your response"
-                        disabled={answering}
-                      />
-                      {currentPersonalised.type === 'Speaking' ? (
-                        <button
-                          type="button"
-                          className={`ghost-button mic-btn ${listening ? 'active' : ''}`}
-                          onClick={toggleMic}
+                    ) : currentPersonalised.type === 'FillInBlank' ? (
+                      (() => {
+                        const template = currentPersonalised.readingSnippet || '';
+                        const parts = String(template).split('___');
+                        const expectedCount = Math.max(0, parts.length - 1);
+
+                        const answers =
+                          responses[currentPersonalised.questionId]?.blankAnswers || [];
+
+                        const handleChange = (idx, value) => {
+                          const updated = [...answers];
+                          updated[idx] = value;
+
+                          updateResponse(currentPersonalised.questionId, {
+                            blankAnswers: updated,
+                            responseText: updated.join('|'),
+                          });
+                        };
+
+                        return (
+                          <div className="fill-blank-student">
+                            {parts.map((part, idx) => (
+                              <React.Fragment key={idx}>
+                                <span>{part}</span>
+                                {idx < expectedCount && (
+                                  <input
+                                    type="text"
+                                    className="fill-blank-input"
+                                    value={answers[idx] || ''}
+                                    onChange={(e) => handleChange(idx, e.target.value)}
+                                    placeholder={`Blank ${idx + 1}`}
+                                    disabled={answering}
+                                  />
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="text-response">
+                        <textarea
+                          rows={4}
+                          value={responses[currentPersonalised.questionId]?.responseText || ''}
+                          onChange={(e) =>
+                            updateResponse(currentPersonalised.questionId, { responseText: e.target.value })
+                          }
+                          placeholder="Type your response"
                           disabled={answering}
-                        >
-                          <Icon.Microphone />
-                          {listening ? 'Listening…' : 'Speak'}
-                        </button>
-                      ) : null}
-                    </div>
-                  )}
+                        />
+                        {currentPersonalised.type === 'Speaking' ? (
+                          <button
+                            type="button"
+                            className={`ghost-button mic-btn ${listening ? 'active' : ''}`}
+                            onClick={toggleMic}
+                            disabled={answering}
+                          >
+                            <Icon.Microphone />
+                            {listening ? 'Listening…' : 'Speak'}
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
 
                   <div className="personalised-actions">
                     <button type="button" className="card-button" onClick={submitPersonalisedAnswer} disabled={answering}>
