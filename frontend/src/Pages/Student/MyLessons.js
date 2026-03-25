@@ -339,16 +339,21 @@ function MyLessons({ role }) {
   }, []);
 
   const refreshLessons = async () => {
-    try {
-      const res = await fetch(API_BASE, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setLessons(Array.isArray(data) ? data.map(normaliseLesson) : []);
-    } catch {
-    }
-  };
+  try {
+    const res = await fetch(API_BASE, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const normalised = Array.isArray(data) ? data.map(normaliseLesson) : [];
+
+    setLessons(normalised);
+    return normalised;
+  } catch {
+    return [];
+  }
+};
 
   useEffect(() => {
     const load = async () => {
@@ -714,7 +719,11 @@ function MyLessons({ role }) {
       setModalMode('feedback');
       setAttemptMessage('Submitted! Instant feedback is ready below.');
       toast.success('Lesson submitted successfully.');
-      await refreshLessons();
+      const updatedLessons = await refreshLessons();
+      const updatedLesson = updatedLessons.find((l) => l.id === lessonId);
+      if (updatedLesson) {
+        setActiveLesson(updatedLesson);
+      }
     } catch (err) {
       console.error(err);
       setAttemptMessage(err.message || 'Failed to submit attempt.');
@@ -1224,6 +1233,7 @@ function MyLessons({ role }) {
                     const primaryAttempt = lesson.originalAttempt || latestAttempt;
                     const retryAttempt = lesson.retryAttempt;
                     const retryAllowed = lesson.retryAllowed ?? false;
+                    const isRetryInProgress = !!lesson.activeAttempt && retryAllowed;
                     const scoreOutOf = lesson.scoreOutOf || FALLBACK_OUT_OF;
                     const primaryPercent =
                       primaryAttempt && typeof primaryAttempt.totalScore === 'number' && scoreOutOf > 0
@@ -1275,13 +1285,17 @@ function MyLessons({ role }) {
                           <button
                             type="button"
                             className="ghost-btn small"
-                            disabled={loadingAttempt || !retryAllowed}
-                            onClick={() => openAttempt(lesson)}
+                            disabled={loadingAttempt || (!retryAllowed && !isRetryInProgress)}
+                            onClick={() =>
+                              isRetryInProgress
+                                ? openAttempt(lesson, lesson.activeAttempt.attemptId, false)
+                                : openAttempt(lesson)
+                            }
                           >
                             <span className="btn-icon" aria-hidden="true">
                               <Icon.Redo className="icon" />
                             </span>
-                            {retryAllowed ? 'Retry lesson' : 'Retry used'}
+                            {isRetryInProgress ? 'Continue retry' : retryAllowed ? 'Retry lesson' : 'Retry used'}
                           </button>
                           <button
                             type="button"

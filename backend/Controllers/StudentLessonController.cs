@@ -118,7 +118,7 @@ namespace backend.Controllers
                     LatestAttempt = summary,
                     OriginalAttempt = original,
                     RetryAttempt = retry,
-                    RetryAllowed = hasSubmitted && !hasRetried && active == null,
+                    RetryAllowed = hasSubmitted && !hasRetried,
                     ScoreOutOf = scoreOutOfByLessonId.TryGetValue(lesson.Id, out var outOf) ? outOf : 0
                 };
             }).ToList();
@@ -287,7 +287,7 @@ namespace backend.Controllers
                 var existing = attempt.Responses.FirstOrDefault(r => r.LessonQuestionId == question.Id);
                 if (existing == null)
                 {
-                        existing = new QuestionResponse
+                    existing = new QuestionResponse
                     {
                         LessonAttemptId = attempt.Id,
                         LessonQuestionId = question.Id,
